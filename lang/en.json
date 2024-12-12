@@ -1,0 +1,12 @@
+{
+  "RebelAuditLog": {
+      "RebelAuditLog": "Rebel Audit Log",
+      "AuditLog": "Audit Log",
+      "Event": "Event",
+      "EventTask": "Event task",
+      "User": "User",
+      "IP": "IP",
+      "Log": "Log",
+      "Timestamp": "Time stamp"
+  }
+}

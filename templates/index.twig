@@ -1,0 +1,116 @@
+{% extends 'admin.twig' %}
+
+{% block content %}
+<style type="text/css">
+table.dataTable thead tr th:not(.label) {
+    text-align: left;
+}
+</style>
+<div class="card container-fluid">
+    <div class="card-content">
+        <div style="float:right">
+            <a style="text-decoration:none" href="https://digitalist.cloud/">
+                <img src="plugins/BotTracker/assets/dot.png" height="40" />
+            </a>
+        </div>
+        <h1>Rebel Audit Log</h1>
+        <p>This plugin is maintained and developed by <a href="https://digitalist.cloud/">Digitalist Open Cloud</a></p>
+            <div class="form-group row matomo-form-field" style="margin-bottom: 2em">
+                <form action="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}" method="post">
+                    <div class="col">
+                <label for="user">Filter by User:</label>
+                <select name="user" id="user" class="select-dropdown dropdown-trigger">
+                    <option value="">All Users</option>
+                    {% for userRecord in users %}
+                        <option value="{{ userRecord.user }}" {% if userRecord.user == selectedUser %}selected{% endif %}>
+                            {{ userRecord.user }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label for="event_base">Filter by Event Base:</label>
+                <select name="event_base" id="event_base" class="select-dropdown dropdown-trigger">
+                    <option value="">All Event Bases</option>
+                    {% for event in eventBases %}
+                        <option value="{{ event.event_base }}" {% if event.event_base == selectedEventBase %}selected{% endif %}>
+                            {{ event.event_base }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <div class="checkbox">
+                    <label for="excludeConsole">
+                        <input type="checkbox" name="excludeConsole" id="excludeConsole" value="1" {% if excludeConsole %}checked{% endif %}><span>Exclude Console Users</span>
+                    </label>
+                </div>
+            </div>
+            <div class="col">
+            <button type="submit" class="btn">Filter</button>
+            </div>
+            </form>
+            <div>
+             <p>Export: <span class="icon-download"></span> <a href="{{ linkTo({'module': 'API', 'method': 'RebelAuditLog.getAudits'}) }}&token_auth={{ token_auth }}&force_api_session=1&order=ASC&format=CSV">CSV</a><br />
+                <a href="{{ linkTo({'module': 'API', 'action': 'listAllAPI'}) }}#/RebelAuditLog">More export formats</a></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s12">
+                <table class="dataTable table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ 'RebelAuditLog_Event'|translate }}</th>
+                            <th>{{ 'RebelAuditLog_EventTask'|translate }}</th>
+                            <th>{{ 'RebelAuditLog_User'|translate }}</th>
+                            <th>{{ 'RebelAuditLog_IP'|translate }}</th>
+                            <th>{{ 'RebelAuditLog_Log'|translate }}</th>
+                            <th>{{ 'RebelAuditLog_Timestamp'|translate }}</th>
+                        </tr>
+                    </thead>
+                <tbody>
+                    {% for log in audits %}
+                        <tr>
+                            <td>{{ log.event_base }}</td>
+                            <td>{{ log.event_task }}</td>
+                            <td>{{ log.user }}</td>
+                            <td>
+                            {% if log.ip == '127.0.0.1' or log.ip == '0.0.0.0' %}
+                            <!-- localhost -->
+                            {% else %}
+                                {{ log.ip }}
+                            {% endif %}
+
+                            </td>
+                            <td>{{ log.audit_log }}</td>
+                            <td>{{ log.timestamp }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="pagination" style="margin-top: 1.2em;">
+                <div>Total number of logs: {{ total  }} </div>
+                {% if total > 50 %}
+                {% if currentPage > 1 %}
+                    <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ currentPage - 1 }}"><span class="icon-arrow-left"></span> Previous</a>
+                {% endif %}
+
+                {% for page in 1..totalPages %}
+                    {% if page == currentPage %}
+                        <span>{{ page }}</span>
+                    {% else %}
+                        <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ page }}">{{ page }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if currentPage < totalPages %}
+                    <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ currentPage + 1 }}">Next <span class="icon-arrow-right"></span></a>
+                {% endif %}
+                {% endif %}
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
