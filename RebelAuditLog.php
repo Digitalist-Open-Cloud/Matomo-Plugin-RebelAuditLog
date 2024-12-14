@@ -21,53 +21,34 @@
 
 namespace Piwik\Plugins\RebelAuditLog;
 
-use Piwik\Container\StaticContainer;
-use Piwik\Piwik;
-use Piwik\Log\LoggerInterface;
-use Piwik\IP;
 use Piwik\Plugin;
-use Piwik\Request;
 use Piwik\Db;
 use Piwik\Common;
 use Exception;
-use Piwik\Plugins\UsersManager\API as APIUsersManager;
+use Piwik\Plugins\RebelAuditLog\EventHandlerFactory;
+use Piwik\Plugins\RebelAuditLog\AuditService;
+use Piwik\Plugins\RebelAuditLog\Utility;
 
 class RebelAuditLog extends Plugin
 {
+    private EventHandlerFactory $eventHandlerFactory;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $auditService = new AuditService();
+        $utility = new Utility();
+        $this->eventHandlerFactory = new EventHandlerFactory($auditService, $utility);
+    }
+
     private function getDb()
     {
         return Db::get();
     }
 
-    private function extractEventDetails($event)
-    {
-        return [
-            'params' => $event['parameters'],
-            'module' => $event['module'],
-            'action' => $event['action'],
-        ];
-    }
-
     public function registerEvents()
     {
-        $events = [
-            'Translate.getClientSideTranslationKeys' => 'getClientSideTranslationKeys',
-            'Login.authenticate.successful' => 'authenticated',
-            'Login.authenticate.failed' => 'failedLogin',
-            'PluginManager.pluginActivated' => 'pluginActivated',
-            'PluginManager.pluginDeactivated' => 'pluginDeactivated',
-            'PluginManager.pluginInstalled' => 'pluginInstalled',
-            'PluginManager.pluginUninstalled' => 'pluginUninstalled',
-            'API.SitesManager.addSite.end' => 'siteAdded',
-            'API.SitesManager.updateSite.end' => 'siteUpdated',
-            'API.SitesManager.deleteSite.end' => 'siteDeleted'
-        ];
-        return $events;
-    }
-
-    public function getClientSideTranslationKeys(&$translationKeys)
-    {
-        $translationKeys[] = 'RebelAuditLog_RebelAuditLog';
+        return $this->eventHandlerFactory->discoverEventHandlers();
     }
 
     public function install()
@@ -97,179 +78,5 @@ class RebelAuditLog extends Plugin
     public function uninstall()
     {
         Db::dropTables(Common::prefixTable('rebel_audit'));
-    }
-
-    public function authenticated($auth)
-    {
-        $login = $this->getLogin();
-        $this->logger()->warning('Login: ' . $login);
-        $this->logger()->warning('IP ' . $this->getIP());
-        $log = "User $login logged in successful";
-
-        $this->addAudit('Login', 'authenticate.successful', $login, $this->getIP(), $this->session(), $log);
-    }
-
-    public function failedLogin($auth)
-    {
-        $login = $this->getLogin();
-        $this->logger()->warning('Login failed: ' . $login);
-        $this->logger()->warning('IP: ' . $this->getIP());
-        $log = "User $login logged in failed";
-        $this->addAudit('Login', 'authenticate.failed', $login, $this->getIP(), $this->session(), $log);
-    }
-
-    public function pluginActivated(string $pluginName): void
-    {
-        $log = "Plugin $pluginName activated";
-        $login = $this->getUser();
-        $this->addAudit(
-            'PluginManager',
-            'pluginActivated',
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    public function pluginDeactivated(string $pluginName): void
-    {
-        $log = "Plugin $pluginName deactivated";
-        $login = $this->getUser();
-        $this->addAudit(
-            'PluginManager',
-            'pluginDeactivated',
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    public function pluginInstalled(string $pluginName): void
-    {
-        $log = "Plugin $pluginName installed";
-        $login = $this->getUser();
-        $this->addAudit(
-            'PluginManager',
-            'pluginInstalled',
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    public function pluginUninstalled(string $pluginName): void
-    {
-        $log = "Plugin $pluginName uninstalled";
-        $login = $this->getUser();
-        $this->addAudit(
-            'PluginManager',
-            'pluginUninstalled',
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    public function siteAdded($null, $event)
-    {
-        $details = $this->extractEventDetails($event);
-        $log = "Site  {$details['params']['siteName']} added";
-        $login = $this->getUser();
-        $this->addAudit(
-            $details['module'],
-            $details['action'],
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    public function siteUpdated($null, $event)
-    {
-        $details = $this->extractEventDetails($event);
-        $log = "Site  {$details['params']['siteName']}, id {$details['params']['idSite']}, updated";
-        $login = $this->getUser();
-        $this->addAudit(
-            $details['module'],
-            $details['action'],
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    public function siteDeleted($null, $event)
-    {
-        $details = $this->extractEventDetails($event);
-        $log = "Site id {$details['params']['idSite']} deleted";
-        $login = $this->getUser();
-        $this->addAudit(
-            $details['module'],
-            $details['action'],
-            $login,
-            $this->getIP(),
-            $this->session(),
-            $log
-        );
-    }
-
-    private function getUser()
-    {
-        if (Common::isRunningConsoleCommand()) {
-            $user = 'Console';
-        } else {
-            $user = APIUsersManager::getInstance()->getUser(Piwik::getCurrentUserLogin());
-        }
-        if (is_array($user)) {
-            return $user['login'];
-        }
-        return $user;
-    }
-    private function getLogin()
-    {
-        $login = StaticContainer::get(\Piwik\Auth::class)->getLogin();
-        if (empty($login) || $login == 'anonymous') {
-            $login = $request = Request::fromRequest('form_login', false);
-            if (Piwik::getAction() === 'logme') {
-                $login = $request = Request::fromRequest('login', $login);
-            }
-        }
-        return $login;
-    }
-
-    private function getIP()
-    {
-        return IP::getIpFromHeader();
-    }
-
-    private function logger()
-    {
-        $logger = StaticContainer::get(LoggerInterface::class);
-        return $logger;
-    }
-
-    private function addAudit($eventBase, $eventTask, $user, $ip, $session, $log)
-    {
-        $query = "INSERT INTO `" . Common::prefixTable('rebel_audit') . "`
-        (event_base, event_task, user, ip, session, audit_log) VALUES (?,?,?,?,?,?)";
-        $params = [$eventBase, $eventTask, $user, $ip, $session, $log];
-        $db = $this->getDb();
-        $db->query($query, $params);
-    }
-
-    /**
-     * Later on, try to get session.
-     * For now, this returns empty.
-     * @return string
-     */
-    private function session()
-    {
-        return '';
     }
 }
