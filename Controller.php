@@ -100,8 +100,6 @@ class Controller extends \Piwik\Plugin\Controller
         $sql = "SELECT COUNT(*) as total FROM " . Common::prefixTable('rebel_audit') . " $condition";
 
         $total = (int) Db::fetchOne($sql, $params);
-        //$this->logger()->warning($total);
-
 
         return $total;
     }
@@ -122,13 +120,13 @@ class Controller extends \Piwik\Plugin\Controller
     {
         Piwik::checkUserHasSuperUserAccess();
 
-        $page = Common::getRequestVar('page', 1, 'int');
+        //$page = Common::getRequestVar('page', 1, 'int');
+        $page = Request::fromRequest()->getIntegerParameter('page', 1);
         $limit = 50;
         $offset = ($page - 1) * $limit;
         $excludeConsole = Request::fromRequest()->getBoolParameter('excludeConsole', false);
         $selectedEventBase = Request::fromRequest()->getStringParameter('event_base', '');
         $selectedUser = Request::fromRequest()->getStringParameter('user', '');
-        //$audits = $this->getAudits($offset, $limit, $excludeConsole, $selectedUser, $selectedEventBase , 'DESC');
 
         $api = new API();
         $audits = $api->getAudits($offset, $limit, $excludeConsole, $selectedUser, $selectedEventBase, 'DESC');
@@ -153,10 +151,5 @@ class Controller extends \Piwik\Plugin\Controller
             'selectedEventBase' => $selectedEventBase,
             'selectedUser' => $selectedUser
         ]);
-    }
-    private function logger()
-    {
-        $logger = StaticContainer::get(LoggerInterface::class);
-        return $logger;
     }
 }

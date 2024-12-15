@@ -21,20 +21,10 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\AuditService;
-use Piwik\Plugins\RebelAuditLog\Utility;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class UserSetSuperUser implements EventHandlerInterface
+class UserSetSuperUser extends AbstractEventHandler
 {
-    private AuditService $auditService;
-    private Utility $utility;
-
-    public function __construct(AuditService $auditService, Utility $utility)
-    {
-        $this->auditService = $auditService;
-        $this->utility = $utility;
-    }
-
     public static function getSubscribedEvents(): array
     {
         return ['API.UsersManager.setSuperUserAccess.end'];
@@ -42,7 +32,6 @@ class UserSetSuperUser implements EventHandlerInterface
 
     public function __invoke(...$params): void
     {
-        $user = $this->utility->getUser();
         $details = $this->utility->extractEventDetails($params[1]);
         $superUserAccess = $details['params']['hasSuperUserAccess'];
         if ($superUserAccess == "1") {
@@ -51,13 +40,6 @@ class UserSetSuperUser implements EventHandlerInterface
             $log = "{$details['params']['userLogin']} was removed as super user.";
         }
 
-        $this->auditService->logAudit(
-            $details['module'],
-            $details['action'],
-            $user,
-            $this->utility->getIP(),
-            $this->utility->session(),
-            $log
-        );
+        $this->logAudit($details['module'], $details['action'], $log);
     }
 }

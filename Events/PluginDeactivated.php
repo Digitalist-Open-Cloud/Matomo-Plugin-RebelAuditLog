@@ -21,20 +21,10 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\AuditService;
-use Piwik\Plugins\RebelAuditLog\Utility;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class PluginDeactivated implements EventHandlerInterface
+class PluginDeactivated extends AbstractEventHandler
 {
-    private AuditService $auditService;
-    private Utility $utility;
-
-    public function __construct(AuditService $auditService, Utility $utility)
-    {
-        $this->auditService = $auditService;
-        $this->utility = $utility;
-    }
-
     public static function getSubscribedEvents(): array
     {
         return ['PluginManager.pluginDeactivated'];
@@ -45,13 +35,6 @@ class PluginDeactivated implements EventHandlerInterface
         $plugin = implode(",", $params);
         $log = "Plugin {$plugin} deactivated";
 
-        $this->auditService->logAudit(
-            'PluginManager',
-            'pluginDeactivated',
-            $this->utility->getUser(),
-            $this->utility->getIP(),
-            $this->utility->session(),
-            $log
-        );
+        $this->logAudit('PluginManager', 'pluginDeactivated', $log);
     }
 }

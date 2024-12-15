@@ -21,20 +21,10 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\AuditService;
-use Piwik\Plugins\RebelAuditLog\Utility;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class SiteUpdated implements EventHandlerInterface
+class SiteUpdated extends AbstractEventHandler
 {
-    private AuditService $auditService;
-    private Utility $utility;
-
-    public function __construct(AuditService $auditService, Utility $utility)
-    {
-        $this->auditService = $auditService;
-        $this->utility = $utility;
-    }
-
     public static function getSubscribedEvents(): array
     {
         return ['API.SitesManager.updateSite.end'];
@@ -42,17 +32,9 @@ class SiteUpdated implements EventHandlerInterface
 
     public function __invoke(...$params): void
     {
-        $user = $this->utility->getUser();
         $details = $this->utility->extractEventDetails($params[1]);
         $log = "Site {$details['params']['siteName']}, id {$details['params']['idSite']}, updated";
 
-        $this->auditService->logAudit(
-            $details['module'],
-            $details['action'],
-            $user,
-            $this->utility->getIP(),
-            $this->utility->session(),
-            $log
-        );
+        $this->logAudit($details['module'], $details['action'], $log);
     }
 }

@@ -28,6 +28,10 @@ class EventHandlerFactory
             $className = self::EVENT_NAMESPACE . '\\' . basename($file, '.php'); // Namespace + Class Name
             if (class_exists($className)) { // Make sure the class exists
                 $reflection = new ReflectionClass($className);
+                // Skip abstract classes and classes that do not implement the interface
+                if ($reflection->isAbstract() || !$reflection->implementsInterface(EventHandlerInterface::class)) {
+                    continue;
+                }
                 if ($reflection->implementsInterface(EventHandlerInterface::class)) { // Ensure it implements the interface
                     $handler = $reflection->newInstanceArgs([$this->auditService, $this->utility]); // Inject dependencies
                     foreach ($className::getSubscribedEvents() as $event) { // Register events

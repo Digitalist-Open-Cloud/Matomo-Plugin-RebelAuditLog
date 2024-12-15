@@ -26,9 +26,8 @@ use Piwik\Common;
 use Piwik\Db;
 
 /**
- * API for plugin RebelAudit Log
- *
- * @method static \Piwik\Plugins\RebelAudit\API getInstance()
+ * Rebel Audit Log collects changes in your Matomo installation, like
+ * new users, user permissions changed, a website was added or changed etc.
  */
 class API extends \Piwik\Plugin\API
 {

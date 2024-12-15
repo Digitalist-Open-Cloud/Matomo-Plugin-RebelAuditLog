@@ -23,17 +23,20 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class AuthenticateFailed extends AbstractEventHandler
+class AbTestingExperimentAdded extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['Login.authenticate.failed'];
+        return ['API.AbTesting.addExperiment.end'];
     }
 
     public function __invoke(...$params): void
     {
-        $user = $params[0];
-        $log = "User $user logged in failed";
-        $this->logAudit('Login', 'authenticate.failed', $log, $user);
+        $details = $this->utility->extractEventDetails($params[1]);
+
+        $log = "Experiment {$details['params']['name']} added
+                for site {$details['params']['idSite']}";
+
+        $this->logAudit($details['module'], $details['action'], $log);
     }
 }

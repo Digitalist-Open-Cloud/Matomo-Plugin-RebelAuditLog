@@ -21,20 +21,10 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\AuditService;
-use Piwik\Plugins\RebelAuditLog\Utility;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class UserAdded implements EventHandlerInterface
+class UserAdded extends AbstractEventHandler
 {
-    private AuditService $auditService;
-    private Utility $utility;
-
-    public function __construct(AuditService $auditService, Utility $utility)
-    {
-        $this->auditService = $auditService;
-        $this->utility = $utility;
-    }
-
     public static function getSubscribedEvents(): array
     {
         return ['UsersManager.addUser.end'];
@@ -42,19 +32,10 @@ class UserAdded implements EventHandlerInterface
 
     public function __invoke(...$params): void
     {
-        $user = $this->utility->getUser();
         $name = $params[0];
         $email = $params[1];
-
         $log = "User {$name} ({$email}) added.";
 
-        $this->auditService->logAudit(
-            'UsersManager',
-            'addUser.end',
-            $user,
-            $this->utility->getIP(),
-            $this->utility->session(),
-            $log
-        );
+        $this->logAudit('UsersManager', 'addUser.end', $log);
     }
 }
