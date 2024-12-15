@@ -21,13 +21,14 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
+use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
 class UserSetAccess extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['API.UsersManager.setUserAccess.end'];
+        return [Events::USERS_MANAGER_SET_ACCESS];
     }
 
     public function __invoke(...$params): void

@@ -21,23 +21,25 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
+use Piwik\Plugins\SegmentEditor\API as SegmentEditorAPI;
 
-class AbTestingExperimentAdded extends AbstractEventHandler
+class SegmentDeactivated extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::AB_TESTING_ADD_EXPERIMENT];
+        return [Events::SEGMENT_EDITOR_DEACTIVATED_SEGMENT];
     }
 
     public function __invoke(...$params): void
     {
-        $details = $this->utility->extractEventDetails($params[1]);
+        $idSegment = implode(",", $params);
+        $segmentInfo = SegmentEditorAPI::getInstance()->get($idSegment);
+        $idSite  = $segmentInfo['enable_only_idsite'];
 
-        $log = "Experiment {$details['params']['name']} added
-                for site {$details['params']['idSite']}";
+        $log = "Deactivated segment {$segmentInfo['name']} for site {$idSite}.";
 
-        $this->logAudit($details['module'], $details['action'], $log);
+        $this->logAudit('SegmentEditor', 'deactivate', $log);
     }
 }

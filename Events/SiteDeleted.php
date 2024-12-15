@@ -21,13 +21,14 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
+use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
 class SiteDeleted extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['API.SitesManager.deleteSite.end'];
+        return [Events::SITES_MANAGER_DELETE_SITE];
     }
 
     public function __invoke(...$params): void

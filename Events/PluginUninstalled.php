@@ -21,13 +21,14 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
+use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
 class PluginUninstalled extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['PluginManager.pluginUninstalled'];
+        return [Events::PLUGIN_UNINSTALLED];
     }
 
     public function __invoke(...$params): void

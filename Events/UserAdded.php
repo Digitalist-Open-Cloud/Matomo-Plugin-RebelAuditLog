@@ -21,13 +21,14 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
+use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
 class UserAdded extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['UsersManager.addUser.end'];
+        return [Events::USERS_MANAGER_ADDED_USER];
     }
 
     public function __invoke(...$params): void

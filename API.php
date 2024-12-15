@@ -28,6 +28,8 @@ use Piwik\Db;
 /**
  * Rebel Audit Log collects changes in your Matomo installation, like
  * new users, user permissions changed, a website was added or changed etc.
+ * The Rebel Audit Log is accessible by super users only, and could be exported
+ * in various formats.
  */
 class API extends \Piwik\Plugin\API
 {

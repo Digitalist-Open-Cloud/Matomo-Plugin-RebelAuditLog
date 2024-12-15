@@ -21,22 +21,20 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class AbTestingExperimentAdded extends AbstractEventHandler
+class SegmentUpdated extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::AB_TESTING_ADD_EXPERIMENT];
+        return [Events::SEGMENT_EDITOR_UPDATED_SEGMENT];
     }
 
     public function __invoke(...$params): void
     {
         $details = $this->utility->extractEventDetails($params[1]);
-
-        $log = "Experiment {$details['params']['name']} added
-                for site {$details['params']['idSite']}";
+        $log = "Updated segment {$details['params']['name']} for site {$details['params']['idSite']}.";
 
         $this->logAudit($details['module'], $details['action'], $log);
     }

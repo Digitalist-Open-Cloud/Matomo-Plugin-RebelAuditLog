@@ -28,7 +28,7 @@ abstract class AbstractEventHandler implements EventHandlerInterface
     /**
      * Helper method to log an audit entry.
      */
-    protected function logAudit(string $eventBase, string $eventTask, string $log, string $actingUser = null): void
+    protected function logAudit(string $eventBase, string $eventTask, string $log, string $actingUser = null, array $details = null ): void
     {
         if ($actingUser) {
             $user = $actingUser;
@@ -41,7 +41,8 @@ abstract class AbstractEventHandler implements EventHandlerInterface
             $user,
             $this->utility->getIP(),
             $this->utility->session(),
-            $log
+            $log,
+            $details
         );
     }
 

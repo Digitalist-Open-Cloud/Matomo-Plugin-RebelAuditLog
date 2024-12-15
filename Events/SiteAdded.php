@@ -21,13 +21,14 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
+use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
 class SiteAdded extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['API.SitesManager.addSite.end'];
+        return [Events::SITES_MANAGER_ADDED_SITE];
     }
 
     public function __invoke(...$params): void
@@ -36,5 +37,6 @@ class SiteAdded extends AbstractEventHandler
         $log = "Site  {$details['params']['siteName']} added";
 
         $this->logAudit($details['module'], $details['action'], $log);
+
     }
 }

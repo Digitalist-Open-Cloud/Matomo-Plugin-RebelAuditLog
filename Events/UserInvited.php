@@ -21,11 +21,14 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
+use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
+
 class UserInvited extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['UsersManager.inviteUser.end'];
+        return [Events::USERS_MANAGER_INVITED_USER];
     }
 
     public function __invoke(...$params): void

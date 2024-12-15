@@ -19,6 +19,9 @@ class Utility
         } else {
             $user = APIUsersManager::getInstance()->getUser(Piwik::getCurrentUserLogin());
             if (is_array($user)) {
+                if (!isset($user['login'])) {
+                    return 'anonymous';
+                }
                 return $user['login'];
             }
             return $user;

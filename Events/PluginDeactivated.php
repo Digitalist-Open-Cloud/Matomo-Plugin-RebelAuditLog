@@ -22,12 +22,13 @@
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
+use Piwik\Plugins\RebelAuditLog\Events;
 
 class PluginDeactivated extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['PluginManager.pluginDeactivated'];
+        return [Events::PLUGIN_DEACTIVATED];
     }
 
     public function __invoke(...$params): void

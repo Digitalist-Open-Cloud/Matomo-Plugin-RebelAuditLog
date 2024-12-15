@@ -28,6 +28,7 @@ use Exception;
 use Piwik\Plugins\RebelAuditLog\EventHandlerFactory;
 use Piwik\Plugins\RebelAuditLog\AuditService;
 use Piwik\Plugins\RebelAuditLog\Utility;
+use Piwik\Plugins\RebelAuditLog\Events;
 
 class RebelAuditLog extends Plugin
 {
@@ -38,7 +39,8 @@ class RebelAuditLog extends Plugin
         parent::__construct();
         $auditService = new AuditService();
         $utility = new Utility();
-        $this->eventHandlerFactory = new EventHandlerFactory($auditService, $utility);
+        $events = new Events();
+        $this->eventHandlerFactory = new EventHandlerFactory($auditService, $utility, $events);
     }
 
     private function getDb()
@@ -62,6 +64,22 @@ class RebelAuditLog extends Plugin
             `ip` text,
             `session` varchar(191) NULL,
             `audit_log` varchar(512) NOT NULL,
+            `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+            )
+            ";
+        try {
+            $db->exec($query);
+        } catch (Exception $e) {
+            if (!$db->isErrNo($e, '1050')) {
+                throw $e;
+            }
+        }
+        $query = "CREATE TABLE " . Common::prefixTable('rebel_audit_details') . " (
+            `id` int(24) NOT NULL AUTO_INCREMENT,
+            `base_id` INT(24) NOT NULL,
+            `key` varchar(512) NOT NULL,
+            `value` varchar(512) NOT NULL,
             `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
             )

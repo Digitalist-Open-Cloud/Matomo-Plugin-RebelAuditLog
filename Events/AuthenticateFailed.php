@@ -22,12 +22,13 @@
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
+use Piwik\Plugins\RebelAuditLog\Events;
 
 class AuthenticateFailed extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return ['Login.authenticate.failed'];
+        return [Events::AUTHENTICATE_FAILED];
     }
 
     public function __invoke(...$params): void
