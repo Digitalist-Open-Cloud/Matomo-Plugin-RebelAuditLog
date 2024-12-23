@@ -19,30 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Piwik\Plugins\RebelAuditLog;
+namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Menu\MenuAdmin;
-use Piwik\Piwik;
-use Piwik\Plugin\Menu as MatomoMenu;
+use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class Menu extends MatomoMenu
+class BotTrackerDeleteBot extends AbstractEventHandler
 {
-    public function configureAdminMenu(MenuAdmin $menu)
+    public static function getSubscribedEvents(): array
     {
-        if (Piwik::isUserHasSomeAdminAccess()) {
-            $menu->registerMenuIcon('RebelAuditLog_RebelAuditLog', 'icon-document');
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                null,
-                $this->urlForAction('index'),
-                $order = 42
-            );
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                'RebelAuditLog_AuditLog',
-                $this->urlForAction('index'),
-                $order = 43
-            );
-        }
+        return [Events::BOT_TRACKER_DELETE_BOT];
+    }
+
+    public function __invoke(...$params): void
+    {
+        $idSite = $params[0];
+        $botId = $params[1];
+
+        $log = "Bot with id {$botId} deleted for site {$idSite}";
+
+        $this->logAudit('BotTracker', 'deleteBot.successful', $log);
     }
 }

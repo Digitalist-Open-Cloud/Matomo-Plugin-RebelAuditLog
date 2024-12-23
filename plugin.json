@@ -25,5 +25,8 @@
     },
     "homepage": "",
     "license": "GPL v3+",
-    "keywords": []
+    "keywords": [],
+    "assets": [
+        "vue/main.js"
+    ]
 }

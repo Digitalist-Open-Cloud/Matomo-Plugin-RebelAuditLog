@@ -24,18 +24,20 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class SegmentUpdated extends AbstractEventHandler
+class DashboardCreateNewDashboardForUser extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::SEGMENT_EDITOR_UPDATED_SEGMENT];
+        return [Events::DASHBOARD_CREATE_NEW];
     }
 
     public function __invoke(...$params): void
     {
-        $details = $this->utility->extractEventDetails($params[1]);
-        $log = "Updated segment {$details['params']['name']} for site {$details['params']['idSite']}.";
 
-        $this->logAudit($details['module'], $details['action'], $log);
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Added new dashboard {$details['params']['dashboardName']}.";
+        $detailedLog = $this->utility->getDetails($details['params']);
+
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

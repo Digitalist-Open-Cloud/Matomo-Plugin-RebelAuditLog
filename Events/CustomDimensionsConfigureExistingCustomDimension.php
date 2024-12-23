@@ -24,18 +24,20 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class SiteDeleted extends AbstractEventHandler
+class CustomDimensionsConfigureExistingCustomDimension extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::SITES_MANAGER_DELETE_SITE];
+        return [Events::CUSTOM_DIMENSIONS_CONFIGURE_DIMENSION];
     }
 
     public function __invoke(...$params): void
     {
-        $details = $this->utility->extractEventDetails($params[1]);
-        $log = "Site id {$details['params']['idSite']} deleted";
 
-        $this->logAudit($details['module'], $details['action'], $log);
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Configured custom dimension {$details['params']['name']} for site {$details['params']['idSite']}.";
+        $detailedLog = $this->utility->getDetails($details['params']);
+
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

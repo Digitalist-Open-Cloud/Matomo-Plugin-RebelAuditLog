@@ -24,18 +24,19 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class PluginUninstalled extends AbstractEventHandler
+class PrivacyManagerExecuteDataPurge extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::PLUGIN_UNINSTALLED];
+        return [Events::PRIVACY_MANAGER_EXECUTE_DATA_PURGE];
     }
 
     public function __invoke(...$params): void
     {
-        $plugin = implode(",", $params);
-        $log = "Plugin {$plugin} activated";
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Data purge executed.";
+        $detailedLog = $this->utility->getDetails($details['params']);
 
-        $this->logAudit('PluginManager', 'pluginUninstalled', $log);
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

@@ -21,22 +21,21 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class AbTestingExperimentAdded extends AbstractEventHandler
+class PrivacyManagerActivateDoNotTrack extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::AB_TESTING_ADD_EXPERIMENT];
+        return [Events::PRIVACY_MANAGER_ACTIVATE_DO_NOT_TRACK];
     }
 
     public function __invoke(...$params): void
     {
-        $details = $this->utility->extractEventDetails($params[1]);
 
-        $log = "Experiment {$details['params']['name']} added
-                for site {$details['params']['idSite']}";
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Do Not Track enabled.";
 
         $this->logAudit($details['module'], $details['action'], $log);
     }

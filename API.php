@@ -33,8 +33,15 @@ use Piwik\Db;
  */
 class API extends \Piwik\Plugin\API
 {
-    public function getAudits($offset = 0, $limit = 50000, $excludeConsole = false, $selectedUser = null, $selectedEventBase = null, $order = 'ASC')
-    {
+    public function getAudits(
+        $offset = 0,
+        $limit = 50000,
+        $excludeConsole = false,
+        $selectedUser = null,
+        $selectedEventBase = null,
+        $order = 'ASC',
+        $idSite = 1,
+    ) {
         Piwik::checkUserHasSuperUserAccess();
         $offset = (int) $offset;
         $limit = (int) $limit;

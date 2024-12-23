@@ -45,17 +45,38 @@ class Utility
         return IP::getIpFromHeader();
     }
 
+    /**
+     * @return string
+     */
     public function session(): string
     {
         return ''; // TODO: Implement session fetching later.
     }
 
+    /**
+     * @return array
+     */
     public function extractEventDetails($event): array
     {
+        if (isset($event['module'])) {
+            $module = $event['module'];
+        } else {
+            $module = '';
+        }
+        if (isset($event['action'])) {
+            $action = $event['action'];
+        } else {
+            $action = '';
+        }
+        if (isset($event['parameters'])) {
+            $parameters = $event['parameters'];
+        } else {
+            $parameters = '';
+        }
         return [
-            'params' => $event['parameters'],
-            'module' => $event['module'],
-            'action' => $event['action'],
+            'params' => $parameters,
+            'module' => $module,
+            'action' => $action,
         ];
     }
 
@@ -63,5 +84,59 @@ class Utility
     {
         $logger = StaticContainer::get(LoggerInterface::class);
         return $logger;
+    }
+
+    /**
+     * @return array
+     */
+    public function removeEmpty(array $array): array
+    {
+        return array_filter($array, function ($value) {
+            return $this->removeEmptyInternal($value);
+        });
+    }
+
+    /**
+     * @return bool
+     */
+    private function removeEmptyInternal($value): bool
+    {
+        return !empty($value) || $value === 0;
+    }
+
+    /**
+     * Get details.
+     * @return array
+     */
+    public function getDetails(array $params): array
+    {
+        $logDetails = [];
+
+        foreach ($params as $key => $value) {
+            if (is_array($value)) {
+                $logDetails[$key] = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            } else {
+                $logDetails[$key] = (string)$value;
+            }
+        }
+
+        return $logDetails;
+    }
+
+    /**
+     * Helper to process nested or key-value arrays
+     * @return array
+     */
+    private function flattenKeyValues(array $array): array
+    {
+        $flat = [];
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $flat[] = "{$key}:" . implode(',', $this->flattenKeyValues($value));
+            } else {
+                $flat[] = "{$key}:{$value}";
+            }
+        }
+        return $flat;
     }
 }

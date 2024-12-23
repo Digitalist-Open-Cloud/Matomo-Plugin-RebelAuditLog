@@ -19,30 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Piwik\Plugins\RebelAuditLog;
+namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Menu\MenuAdmin;
-use Piwik\Piwik;
-use Piwik\Plugin\Menu as MatomoMenu;
+use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class Menu extends MatomoMenu
+class BotTrackerUpdateBot extends AbstractEventHandler
 {
-    public function configureAdminMenu(MenuAdmin $menu)
+    public static function getSubscribedEvents(): array
     {
-        if (Piwik::isUserHasSomeAdminAccess()) {
-            $menu->registerMenuIcon('RebelAuditLog_RebelAuditLog', 'icon-document');
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                null,
-                $this->urlForAction('index'),
-                $order = 42
-            );
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                'RebelAuditLog_AuditLog',
-                $this->urlForAction('index'),
-                $order = 43
-            );
-        }
+        return [Events::BOT_TRACKER_UPDATE_BOT];
+    }
+
+    public function __invoke(...$params): void
+    {
+        $idSite = $params[0];
+        // Create variables out of the array.
+        extract($params[1]);
+
+        $log = "Bot {$botName} updated for site {$idSite}";
+        $details = [
+            'botName' => $botName,
+            'idSite' => $idSite,
+            'botActive' => $botActive,
+            'extraStats' => $extraStats,
+        ];
+        $this->logAudit('BotTracker', 'updateBot.successful', $log, $details);
     }
 }

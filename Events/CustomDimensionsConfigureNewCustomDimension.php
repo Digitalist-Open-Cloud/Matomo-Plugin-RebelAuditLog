@@ -24,23 +24,20 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class UserSetSuperUser extends AbstractEventHandler
+class CustomDimensionsConfigureNewCustomDimension extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::USERS_MANAGER_SET_SUPER];
+        return [Events::CUSTOM_DIMENSIONS_NEW_DIMENSION];
     }
 
     public function __invoke(...$params): void
     {
-        $details = $this->utility->extractEventDetails($params[1]);
-        $superUserAccess = $details['params']['hasSuperUserAccess'];
-        if ($superUserAccess == "1") {
-            $log = "{$details['params']['userLogin']} was added as super user.";
-        } else {
-            $log = "{$details['params']['userLogin']} was removed as super user.";
-        }
 
-        $this->logAudit($details['module'], $details['action'], $log);
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Added new custom dimension {$details['params']['name']} for site {$details['params']['idSite']}.";
+        $detailedLog = $this->utility->getDetails($details['params']);
+
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

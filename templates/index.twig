@@ -15,6 +15,17 @@ table.dataTable thead tr th:not(.label) {
         </div>
         <h1>Rebel Audit Log</h1>
         <p>This plugin is maintained and developed by <a href="https://digitalist.cloud/">Digitalist Open Cloud</a></p>
+            <div class="row">
+                <div class="col" style="float:left">
+                    <label for="date_range">Filter by Date Range:</label>
+                    <div id="periodSelector"
+                    vue-component
+                    periods='["day","week","month","year"]'
+                    vue-entry="CoreHome.PeriodSelector"
+                    class="borderedControl">
+               </div>
+                </div>
+            </div>
             <div class="form-group row matomo-form-field" style="margin-bottom: 2em">
                 <form action="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}" method="post">
                     <div class="col">

@@ -21,21 +21,30 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class PluginActivated extends AbstractEventHandler
+class BotTrackerInsertBot extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::PLUGIN_ACTIVATED];
+        return [Events::BOT_TRACKER_INSERT_BOT];
     }
 
     public function __invoke(...$params): void
     {
-        $plugin = implode(",", $params);
-        $log = "Plugin {$plugin} activated";
+        $idSite = $params[0];
+        // Create variables out of the array.
+        extract($params[1]);
 
-        $this->logAudit('PluginManager', 'pluginActivated', $log);
+        $log = "Bot {$botName} added for site {$idSite}";
+        $details = [
+            'botName' => $botName,
+            'idSite' => $idSite,
+            'botActive' => $botActive,
+            'extraStats' => $extraStats,
+            'botType' => $botType,
+        ];
+        $this->logAudit('BotTracker', 'insertBot.successful', $log, $details);
     }
 }

@@ -24,20 +24,19 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class UserSetAccess extends AbstractEventHandler
+class PrivacyManagerDeactivateDoNotTrack extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::USERS_MANAGER_SET_ACCESS];
+        return [Events::PRIVACY_MANAGER_DEACTIVATE_DO_NOT_TRACK];
     }
 
     public function __invoke(...$params): void
     {
-        $details = $this->utility->extractEventDetails($params[1]);
 
-        foreach ($details['params']['idSites'] as $site) {
-            $log = "Changed users {$details['params']['userLogin']} access to {$details['params']['access']} for site id {$site}.";
-            $this->logAudit($details['module'], $details['action'], $log);
-        }
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Do Not Track disabled.";
+
+        $this->logAudit($details['module'], $details['action'], $log);
     }
 }

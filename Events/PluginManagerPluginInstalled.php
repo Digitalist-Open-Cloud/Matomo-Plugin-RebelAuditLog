@@ -19,30 +19,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Piwik\Plugins\RebelAuditLog;
+namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Menu\MenuAdmin;
-use Piwik\Piwik;
-use Piwik\Plugin\Menu as MatomoMenu;
+use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class Menu extends MatomoMenu
+class PluginManagerPluginInstalled extends AbstractEventHandler
 {
-    public function configureAdminMenu(MenuAdmin $menu)
+    public static function getSubscribedEvents(): array
     {
-        if (Piwik::isUserHasSomeAdminAccess()) {
-            $menu->registerMenuIcon('RebelAuditLog_RebelAuditLog', 'icon-document');
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                null,
-                $this->urlForAction('index'),
-                $order = 42
-            );
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                'RebelAuditLog_AuditLog',
-                $this->urlForAction('index'),
-                $order = 43
-            );
-        }
+        return [Events::PLUGIN_INSTALLED];
+    }
+
+    public function __invoke(...$params): void
+    {
+        $plugin = implode(",", $params);
+        $log = "Plugin {$plugin} installed";
+
+        $this->logAudit('PluginManager', 'pluginInstalled', $log);
     }
 }

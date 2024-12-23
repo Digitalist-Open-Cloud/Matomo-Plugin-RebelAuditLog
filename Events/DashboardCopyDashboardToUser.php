@@ -24,18 +24,20 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class PluginInstalled extends AbstractEventHandler
+class DashboardCopyDashboardToUser extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::PLUGIN_INSTALLED];
+        return [Events::DASHBOARD_COPY];
     }
 
     public function __invoke(...$params): void
     {
-        $plugin = implode(",", $params);
-        $log = "Plugin {$plugin} installed";
 
-        $this->logAudit('PluginManager', 'pluginInstalled', $log);
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Copied dashboard {$details['params']['dashboardName']} to user {$details['params']['copyToUser']}.";
+        $detailedLog = $this->utility->getDetails($details['params']);
+
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

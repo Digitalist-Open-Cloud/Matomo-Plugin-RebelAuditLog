@@ -79,7 +79,7 @@ class RebelAuditLog extends Plugin
             `id` int(24) NOT NULL AUTO_INCREMENT,
             `base_id` INT(24) NOT NULL,
             `key` varchar(512) NOT NULL,
-            `value` varchar(512) NOT NULL,
+            `value` text NOT NULL,
             `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
             )

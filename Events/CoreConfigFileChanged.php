@@ -19,30 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Piwik\Plugins\RebelAuditLog;
+namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Menu\MenuAdmin;
-use Piwik\Piwik;
-use Piwik\Plugin\Menu as MatomoMenu;
+use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class Menu extends MatomoMenu
+class CoreConfigFileChanged extends AbstractEventHandler
 {
-    public function configureAdminMenu(MenuAdmin $menu)
+    public static function getSubscribedEvents(): array
     {
-        if (Piwik::isUserHasSomeAdminAccess()) {
-            $menu->registerMenuIcon('RebelAuditLog_RebelAuditLog', 'icon-document');
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                null,
-                $this->urlForAction('index'),
-                $order = 42
-            );
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                'RebelAuditLog_AuditLog',
-                $this->urlForAction('index'),
-                $order = 43
-            );
-        }
+        return [Events::CORE_CONFIG_FILE_CHANGED];
+    }
+
+    public function __invoke(...$params): void
+    {
+        $log = "Config file has changed at {$params[0]}";
+        $detailed = [
+            'file' => $params[0],
+        ];
+        $this->logAudit('Core', 'configFileChanged', $log, $detailed);
+        // @todo: add config to $detailed.
     }
 }

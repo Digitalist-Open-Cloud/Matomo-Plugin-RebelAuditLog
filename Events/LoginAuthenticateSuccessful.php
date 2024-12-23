@@ -21,22 +21,20 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
+use Piwik\Plugins\RebelAuditLog\Events;
 
-class SiteUpdated extends AbstractEventHandler
+class LoginAuthenticateSuccessful extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::SITES_MANAGER_UPDATE_SITE];
+        return [Events::AUTHENTICATE_SUCCESSFUL];
     }
 
     public function __invoke(...$params): void
     {
-
-        $details = $this->utility->extractEventDetails($params[1]);
-        $log = "Site {$details['params']['siteName']}, id {$details['params']['idSite']}, updated";
-
-        $this->logAudit($details['module'], $details['action'], $log);
+        $user =  $params[0];
+        $log = "User $user logged in successfully.";
+        $this->logAudit('Login', 'authenticate.successful', $log, null, $user);
     }
 }

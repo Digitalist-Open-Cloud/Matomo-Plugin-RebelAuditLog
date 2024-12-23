@@ -23,23 +23,20 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
-use Piwik\Plugins\SegmentEditor\API as SegmentEditorAPI;
 
-class SegmentDeactivated extends AbstractEventHandler
+class PrivacyManagerSetDeleteReportsSettings extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::SEGMENT_EDITOR_DEACTIVATED_SEGMENT];
+        return [Events::PRIVACY_MANAGER_SET_DELETE_REPORTS_SETTINGS];
     }
 
     public function __invoke(...$params): void
     {
-        $idSegment = implode(",", $params);
-        $segmentInfo = SegmentEditorAPI::getInstance()->get($idSegment);
-        $idSite  = $segmentInfo['enable_only_idsite'];
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Set to delete reports older than {$details['params']['deleteReportsOlderThan']} months.";
+        $detailedLog = $this->utility->getDetails($details['params']);
 
-        $log = "Deactivated segment {$segmentInfo['name']} for site {$idSite}.";
-
-        $this->logAudit('SegmentEditor', 'deactivate', $log);
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

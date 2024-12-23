@@ -24,19 +24,18 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class UserInvited extends AbstractEventHandler
+class CustomAlertsDeleteAlert extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::USERS_MANAGER_INVITED_USER];
+        return [Events::CUSTOM_ALERTS_DELETE_ALERT];
     }
 
     public function __invoke(...$params): void
     {
-        $name = $params[0];
-        $email = $params[1];
-        $log = "User {$name} ({$email}) invited.";
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Deleted custom alert {$details['params']['idAlert']}.";
 
-        $this->logAudit('UsersManager', 'invitedUser.end', $log);
+        $this->logAudit($details['module'], $details['action'], $log);
     }
 }

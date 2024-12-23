@@ -21,20 +21,22 @@
 
 namespace Piwik\Plugins\RebelAuditLog\Events;
 
-use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 use Piwik\Plugins\RebelAuditLog\Events;
+use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class Authenticated extends AbstractEventHandler
+class PrivacyManagerExportDataSubjects extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::AUTHENTICATE_SUCCESSFUL];
+        return [Events::PRIVACY_MANAGER_EXPORT_DATA_SUBJECTS];
     }
 
     public function __invoke(...$params): void
     {
-        $user =  $params[0];
-        $log = "User $user logged in successfully.";
-        $this->logAudit('Login', 'authenticate.successful', $log, $user);
+        $details = $this->utility->extractEventDetails($params[1]);
+        $log = "Exported data with GDPR Tools.";
+        $detailedLog = $this->utility->getDetails($details['params']);
+
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

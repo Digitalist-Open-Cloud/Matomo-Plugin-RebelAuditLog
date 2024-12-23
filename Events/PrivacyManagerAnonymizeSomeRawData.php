@@ -24,18 +24,26 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class UserAddCapabilities extends AbstractEventHandler
+class PrivacyManagerAnonymizeSomeRawData extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::USERS_MANAGER_ADD_CAPABILITIES];
+        return [Events::PRIVACY_MANAGER_ANONYMIZE_SOME_RAW_DATA];
     }
 
     public function __invoke(...$params): void
     {
         $details = $this->utility->extractEventDetails($params[1]);
-        $log = "Changed users {$details['params']['userLogin']} capabilities.";
+        $detailedLog = $this->utility->getDetails($details['params']);
+        $idSites = $detailedLog['idSites'];
+        if ($idSites == 'all') {
+            $site = ' for all sites';
+        } else {
+            $site = " for site with id {$idSites}";
+        }
+        $dates = $detailedLog['date'];
+        $log = "Anonymized Raw Data for {$site} between dates {$dates}.";
 
-        $this->logAudit($details['module'], $details['action'], $log);
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

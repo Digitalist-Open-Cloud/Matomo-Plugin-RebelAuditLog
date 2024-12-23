@@ -24,7 +24,7 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 use Piwik\Plugins\RebelAuditLog\Events;
 
-class AuthenticateFailed extends AbstractEventHandler
+class LoginAuthenticateFailed extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
@@ -35,6 +35,6 @@ class AuthenticateFailed extends AbstractEventHandler
     {
         $user = $params[0];
         $log = "User $user logged in failed";
-        $this->logAudit('Login', 'authenticate.failed', $log, $user);
+        $this->logAudit('Login', 'authenticate.failed', $log, null, $user);
     }
 }

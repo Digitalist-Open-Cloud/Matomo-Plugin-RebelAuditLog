@@ -24,18 +24,37 @@ namespace Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events;
 use Piwik\Plugins\RebelAuditLog\Events\AbstractEventHandler;
 
-class SegmentAdded extends AbstractEventHandler
+class PrivacyManagerSetAnonymizeIp extends AbstractEventHandler
 {
     public static function getSubscribedEvents(): array
     {
-        return [Events::SEGMENT_EDITOR_ADDED_SEGMENT];
+        return [Events::PRIVACY_MANAGER_SET_ANONYMIZE_IP];
     }
 
     public function __invoke(...$params): void
     {
         $details = $this->utility->extractEventDetails($params[1]);
-        $log = "Added segment {$details['params']['name']} for site {$details['params']['idSite']}.";
 
-        $this->logAudit($details['module'], $details['action'], $log);
+        if ($details['params']['anonymizeIPEnable'] == "1") {
+            $log = "Anonymize IP is turned on.";
+        } else {
+            $log = "Anonymize IP is turned off.";
+        }
+        if ($details['params']['anonymizeUserId'] == "1") {
+            $log .= " Anonymize user id is turned on.";
+        }
+        if ($details['params']['forceCookielessTracking'] == "1") {
+            $log .= " Force Cookieless tracking is turned on.";
+        }
+        if ($details['params']['useAnonymizedIpForVisitEnrichment'] == "1") {
+            $log .= " Use Anonymized IP addresses when enriching visits is turned on.";
+        }
+        if ($details['params']['anonymizeReferrer']) {
+            $log .= " Anonymize referer is set to {$details['params']['anonymizeReferrer']}";
+        }
+        $detailedLog = $this->utility->getDetails($details['params']);
+
+
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }

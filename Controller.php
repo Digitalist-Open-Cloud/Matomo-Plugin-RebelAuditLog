@@ -25,20 +25,24 @@ use Piwik\Common;
 use Piwik\Db;
 use Piwik\Piwik;
 use Piwik\View;
-use Piwik\Log\LoggerInterface;
 use Piwik\Container\StaticContainer;
 use Piwik\Request;
-use Piwik\Plugins\RebelAuditLog\API;
+use Piwik\Period\Factory;
+
+//use Piwik\Plugins\RebelAuditLog\Utility;
 
 class Controller extends \Piwik\Plugin\Controller
 {
-    private function getDb()
-    {
-        return Db::get();
-    }
-
-    private function getAudits($offset = 0, $limit = 50, $excludeConsole = false, $selectedUser = null, $selectedEventBase = null)
-    {
+    private function getAudits(
+        $offset = 0,
+        $limit = 50,
+        $excludeConsole = false,
+        $selectedUser = null,
+        $selectedEventBase = null,
+        $sortDirection = 'DESC',
+        $startDate = null,
+        $endDate = null
+    ) {
         $offset = (int) $offset;
         $limit = (int) $limit;
 
@@ -49,36 +53,48 @@ class Controller extends \Piwik\Plugin\Controller
             $condition .= " AND user != ?";
             $params[] = 'Console';
         }
-
         if ($selectedUser) {
             $condition .= " AND user = ?";
             $params[] = $selectedUser;
         }
-
         if ($selectedEventBase) {
             $condition .= " AND event_base = ?";
             $params[] = $selectedEventBase;
         }
+        if ($startDate && $endDate) {
+            $condition .= " AND timestamp BETWEEN ? AND ?";
+            // Log the start and end date for debugging
+            // $util = new Utility();
+            //$util->logger()->warn("Start Date: " . $startDate);
+            //$util->logger()->warn("End Date: " . $endDate);
+
+            $params[] = $startDate . ' 00:00:00';
+            $params[] = $endDate . ' 23:59:59';
+        }
+
         $sql = "SELECT
-                id,
-                event_base,
-                event_task,
-                user,
-                ip,
-                audit_log,
-                timestamp
+                    id,
+                    event_base,
+                    event_task,
+                    user,
+                    ip,
+                    audit_log,
+                    timestamp
                 FROM " . Common::prefixTable('rebel_audit') . "
                 $condition
-                ORDER BY timestamp DESC
-                LIMIT $offset, $limit
-
-        ";
+                ORDER BY timestamp $sortDirection
+                LIMIT $offset, $limit";
 
         return Db::fetchAll($sql, $params);
     }
 
-    private function totalAudits($excludeConsole = false, $selectedUser = null, $selectedEventBase = null)
-    {
+    private function totalAudits(
+        $excludeConsole = false,
+        $selectedUser = null,
+        $selectedEventBase = null,
+        $startDate = null,
+        $endDate = null
+    ) {
         $condition = "WHERE 1=1";
         $params = [];
 
@@ -86,19 +102,25 @@ class Controller extends \Piwik\Plugin\Controller
             $condition .= " AND user != ?";
             $params[] = 'Console';
         }
-
         if ($selectedUser) {
             $condition .= " AND user = ?";
             $params[] = $selectedUser;
         }
-
         if ($selectedEventBase) {
             $condition .= " AND event_base = ?";
             $params[] = $selectedEventBase;
         }
+        if ($startDate && $endDate) {
+            $condition .= " AND timestamp BETWEEN ? AND ?";
+            // Log the start and end date for debugging
+            //$util = new Utility();
+            //$util->logger()->warn("Start Date: " . $startDate);
+            //$util->logger()->warn("End Date: " . $endDate);
+            $params[] = $startDate . ' 00:00:00';
+            $params[] = $endDate . ' 23:59:59';
+        }
 
         $sql = "SELECT COUNT(*) as total FROM " . Common::prefixTable('rebel_audit') . " $condition";
-
         $total = (int) Db::fetchOne($sql, $params);
 
         return $total;
@@ -120,20 +142,28 @@ class Controller extends \Piwik\Plugin\Controller
     {
         Piwik::checkUserHasSuperUserAccess();
 
-        //$page = Common::getRequestVar('page', 1, 'int');
         $page = Request::fromRequest()->getIntegerParameter('page', 1);
         $limit = 50;
         $offset = ($page - 1) * $limit;
         $excludeConsole = Request::fromRequest()->getBoolParameter('excludeConsole', false);
         $selectedEventBase = Request::fromRequest()->getStringParameter('event_base', '');
         $selectedUser = Request::fromRequest()->getStringParameter('user', '');
+        $period = Request::fromRequest()->getStringParameter('period', 'day');
+        $date = Request::fromRequest()->getStringParameter('date', 'today');
+        list($startDate, $endDate) = $this->calculateDateRange($period, $date);
 
-        $api = new API();
-        $audits = $api->getAudits($offset, $limit, $excludeConsole, $selectedUser, $selectedEventBase, 'DESC');
-        $totalAudits = $this->totalAudits($excludeConsole, $selectedUser, $selectedEventBase);
+        $audits = $this->getAudits(
+            $offset,
+            $limit,
+            $excludeConsole,
+            $selectedUser,
+            $selectedEventBase,
+            'DESC',
+            $startDate,
+            $endDate
+        );
+        $totalAudits = $this->totalAudits($excludeConsole, $selectedUser, $selectedEventBase, $startDate, $endDate);
         $totalPages = ceil($totalAudits / $limit);
-
-        // Values for selects.
         $users = $this->getUsers();
         $eventBases = $this->getEventBases();
 
@@ -149,7 +179,26 @@ class Controller extends \Piwik\Plugin\Controller
             'totalPages' => $totalPages,
             'excludeConsole' => $excludeConsole,
             'selectedEventBase' => $selectedEventBase,
-            'selectedUser' => $selectedUser
+            'selectedUser' => $selectedUser,
+            'currentDate' => $date,
+            'currentPeriod' => $period
         ]);
+    }
+
+    private function calculateDateRange($period, $date)
+    {
+        try {
+            $periodObj = Factory::build($period, $date);
+            $startDate = $periodObj->getDateStart()->toString('Y-m-d');
+            $endDate = $periodObj->getDateEnd()->toString('Y-m-d');
+
+            return [$startDate, $endDate];
+        } catch (\Exception $e) {
+            StaticContainer::get('Psr\Log\LoggerInterface')->error(
+                'Error calculating date range: {message}',
+                ['message' => $e->getMessage()]
+            );
+            return [null, null];
+        }
     }
 }
