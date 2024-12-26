@@ -4,6 +4,9 @@ namespace Piwik\Plugins\RebelAuditLog;
 
 final class Events
 {
+    public const ANNOTATIONS_ADD ='API.Annotations.add.end';
+    public const ANNOTATIONS_SAVE ='API.Annotations.save.end';
+    public const ANNOTATIONS_DELETE = 'API.Annotations.delete.end';
     public const AUTHENTICATE_SUCCESSFUL = 'Login.authenticate.successful';
     public const AUTHENTICATE_FAILED = 'Login.authenticate.failed';
     public const BOT_TRACKER_INSERT_BOT = 'BotTracker.insertBot.successful';
