@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /**
  * The Rebel Audit Log plugin for Matomo.
@@ -35,9 +35,9 @@ class UsersManagerSetUserAccess extends AbstractEventHandler
     {
         $details = $this->utility->extractEventDetails($params[1]);
 
-        foreach ($details['params']['idSites'] as $site) {
+        foreach ($details['params']['idSites'] as $siteId) {
             $log = "Changed users {$details['params']['userLogin']} access to {$details['params']['access']}
-              for site id {$site}.";
+              for site id {$siteId}.";
             $detailedLog = $this->utility->getDetails($details['params']);
 
             $this->logAudit($details['module'], $details['action'], $log, $detailedLog);

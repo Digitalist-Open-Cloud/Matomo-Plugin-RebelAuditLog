@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /**
  * The Rebel Audit Log plugin for Matomo.
@@ -38,12 +38,12 @@ class BotTrackerUpdateBot extends AbstractEventHandler
         extract($params[1]);
 
         $log = "Bot {$botName} updated for site {$idSite}";
-        $details = [
+        $detailedLog = [
             'botName' => $botName,
             'idSite' => $idSite,
             'botActive' => $botActive,
             'extraStats' => $extraStats,
         ];
-        $this->logAudit('BotTracker', 'updateBot.successful', $log, $details);
+        $this->logAudit('BotTracker', 'updateBot.successful', $log, $detailedLog);
     }
 }

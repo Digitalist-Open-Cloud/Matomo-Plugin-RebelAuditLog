@@ -75,6 +75,17 @@ class RebelAuditLog extends Plugin
                 throw $e;
             }
         }
+        // Create indexes for matomo_rebel_audit
+        try {
+            $db->exec("CREATE INDEX idx_user ON " . Common::prefixTable('rebel_audit') . "(`user`)");
+            $db->exec("CREATE INDEX idx_event_base ON " . Common::prefixTable('rebel_audit') . "(`event_base`)");
+            $db->exec("CREATE INDEX idx_user_eventbase_timestamp ON " . Common::prefixTable('rebel_audit') . "(`user`, `event_base`, `timestamp`)");
+            $db->exec("CREATE INDEX idx_timestamp ON " . Common::prefixTable('rebel_audit') . "(`timestamp`)");
+        } catch (Exception $e) {
+            if (!$db->isErrNo($e, '1061')) { // Ignore "duplicate key name" error (1061 in MySQL)
+                throw $e;
+            }
+        }
         $query = "CREATE TABLE " . Common::prefixTable('rebel_audit_details') . " (
             `id` int(24) NOT NULL AUTO_INCREMENT,
             `base_id` INT(24) NOT NULL,
@@ -88,6 +99,16 @@ class RebelAuditLog extends Plugin
             $db->exec($query);
         } catch (Exception $e) {
             if (!$db->isErrNo($e, '1050')) {
+                throw $e;
+            }
+        }
+        // Create indexes for matomo_rebel_audit_details
+        try {
+            $db->exec("CREATE INDEX idx_base_id ON " . Common::prefixTable('rebel_audit_details') . "(`base_id`)");
+            $db->exec("CREATE INDEX idx_key ON " . Common::prefixTable('rebel_audit_details') . "(`key`)");
+            $db->exec("CREATE INDEX idx_base_id_key ON " . Common::prefixTable('rebel_audit_details') . "(`base_id`, `key`)");
+        } catch (Exception $e) {
+            if (!$db->isErrNo($e, '1061')) { // Ignore "duplicate key name" error (1061 in MySQL)
                 throw $e;
             }
         }

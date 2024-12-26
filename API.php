@@ -40,12 +40,17 @@ class API extends \Piwik\Plugin\API
         $selectedUser = null,
         $selectedEventBase = null,
         $order = 'ASC',
-        $idSite = 1,
+        $idSite = 1
     ) {
         Piwik::checkUserHasSuperUserAccess();
+
         $offset = (int) $offset;
         $limit = (int) $limit;
 
+        $baseTable = Common::prefixTable('rebel_audit');
+        $detailsTable = Common::prefixTable('rebel_audit_details');
+
+        // Build the WHERE clause dynamically based on filters
         $condition = "WHERE 1=1";
         $params = [];
 
@@ -63,21 +68,44 @@ class API extends \Piwik\Plugin\API
             $condition .= " AND event_base = ?";
             $params[] = $selectedEventBase;
         }
+
+        // Step 1: Fetch distinct keys from matomo_rebel_audit_details
+        $distinctKeysQuery = "SELECT DISTINCT `key` FROM $detailsTable";
+        $keys = Db::fetchAll($distinctKeysQuery);
+        $dynamicColumns = [];
+
+        // Step 2: Handle dynamic columns only if keys exist
+        if (!empty($keys)) {
+            foreach ($keys as $keyRow) {
+                $keyName = $keyRow['key'];
+
+                // Sanitize column name and add to SELECT clause dynamically
+                $safeColumnName = '`' . str_replace(['`'], '', $keyName) . '`';
+                $dynamicColumns[] = "MAX(CASE WHEN d.`key` = ? THEN d.`value` ELSE NULL END) AS $safeColumnName";
+                $params[] = $keyName;
+            }
+        }
+
+        // Step 3: Generate the dynamic SELECT query
+        $dynamicColumnsSql = !empty($dynamicColumns) ? ', ' . implode(", ", $dynamicColumns) : '';
         $sql = "SELECT
-              id,
-              event_base,
-              event_task,
-              user,
-              ip,
-              audit_log,
-              timestamp
-              FROM " . Common::prefixTable('rebel_audit') . "
-              $condition
-              ORDER BY timestamp $order
-              LIMIT $offset, $limit
+                    a.id,
+                    a.event_base,
+                    a.event_task,
+                    a.user,
+                    a.ip,
+                    a.session,
+                    a.audit_log,
+                    a.timestamp
+                    $dynamicColumnsSql
+                FROM $baseTable a
+                LEFT JOIN $detailsTable d ON a.id = d.base_id
+                $condition
+                GROUP BY a.id
+                ORDER BY a.timestamp $order
+                LIMIT $offset, $limit";
 
-      ";
-
+        // Step 4: Execute the query
         return Db::fetchAll($sql, $params);
     }
 }

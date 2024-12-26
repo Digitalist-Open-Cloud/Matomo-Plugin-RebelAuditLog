@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /**
  * The Rebel Audit Log plugin for Matomo.
@@ -34,10 +34,10 @@ class CoreConfigFileChanged extends AbstractEventHandler
     public function __invoke(...$params): void
     {
         $log = "Config file has changed at {$params[0]}";
-        $detailed = [
+        $detailedLog = [
             'file' => $params[0],
         ];
-        $this->logAudit('Core', 'configFileChanged', $log, $detailed);
+        $this->logAudit('Core', 'configFileChanged', $log, $detailedLog);
         // @todo: add config to $detailed.
     }
 }

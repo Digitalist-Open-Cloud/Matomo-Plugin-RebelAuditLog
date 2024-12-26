@@ -5,6 +5,8 @@
 table.dataTable thead tr th:not(.label) {
     text-align: left;
 }
+
+
 </style>
 <div class="card container-fluid">
     <div class="card-content">
@@ -20,7 +22,7 @@ table.dataTable thead tr th:not(.label) {
                     <label for="date_range">Filter by Date Range:</label>
                     <div id="periodSelector"
                     vue-component
-                    periods='["day","week","month","year"]'
+                    periods='["day","week","month","year","range"]'
                     vue-entry="CoreHome.PeriodSelector"
                     class="borderedControl">
                </div>
@@ -28,7 +30,7 @@ table.dataTable thead tr th:not(.label) {
             </div>
             <div class="form-group row matomo-form-field" style="margin-bottom: 2em">
                 <form action="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}" method="post">
-                    <div class="col">
+            <div class="col">
                 <label for="user">Filter by User:</label>
                 <select name="user" id="user" class="select-dropdown dropdown-trigger">
                     <option value="">All Users</option>
@@ -62,7 +64,7 @@ table.dataTable thead tr th:not(.label) {
             </div>
             </form>
             <div>
-             <p>Export: <span class="icon-download"></span> <a href="{{ linkTo({'module': 'API', 'method': 'RebelAuditLog.getAudits'}) }}&token_auth={{ token_auth }}&force_api_session=1&order=ASC&format=CSV">CSV</a><br />
+             <p>Export: <span class="icon-download"></span> <a href="{{ linkTo({'module': 'API', 'method': 'RebelAuditLog.getAudits'}) }}&token_auth={{ token_auth }}&force_api_session=1&order=ASC&format=CSV&limit=10000000">CSV</a><br />
                 <a href="{{ linkTo({'module': 'API', 'action': 'listAllAPI'}) }}#/RebelAuditLog">More export formats</a></p>
             </div>
         </div>
@@ -99,27 +101,68 @@ table.dataTable thead tr th:not(.label) {
                     {% endfor %}
                 </tbody>
             </table>
-
             <div class="pagination" style="margin-top: 1.2em;">
-                <div>Total number of logs: {{ total  }} </div>
+                <div class="row">
+
+                    <div class="col">
+                        <div>Total number of logs: {{ total }} </div>
+                    </div>
+                    <div class="col">
+                        <div class="page-jump">
+                            <label for="pageJump">Jump to page:</label>
+                            <select id="pageJump" onchange="window.location.href = this.value;">
+                                {% for page in 1..totalPages %}
+                                    <option value="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ page }}"
+                                            {% if page == currentPage %}selected{% endif %}>
+                                        {{ page }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!--
                 {% if total > 50 %}
-                {% if currentPage > 1 %}
-                    <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ currentPage - 1 }}"><span class="icon-arrow-left"></span> Previous</a>
-                {% endif %}
-
-                {% for page in 1..totalPages %}
-                    {% if page == currentPage %}
-                        <span>{{ page }}</span>
-                    {% else %}
-                        <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ page }}">{{ page }}</a>
+                    {% if currentPage > 1 %}
+                        <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ currentPage - 1 }}">
+                            <span class="icon-arrow-left"></span> Previous
+                        </a>
                     {% endif %}
-                {% endfor %}
 
-                {% if currentPage < totalPages %}
-                    <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ currentPage + 1 }}">Next <span class="icon-arrow-right"></span></a>
+                    {% if currentPage > 3 %}
+                        <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page=1">1</a>
+                        {% if currentPage > 4 %}
+                            <span>...</span>
+                        {% endif %}
+                    {% endif %}
+
+                    {% for page in (currentPage - 2)..(currentPage + 2) %}
+                        {% if page > 0 and page <= totalPages %}
+                            {% if page == currentPage %}
+                                <span>{{ page }}</span>
+                            {% else %}
+                                <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ page }}">{{ page }}</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if currentPage < totalPages - 2 %}
+                        {% if currentPage < totalPages - 3 %}
+                            <span>...</span>
+                        {% endif %}
+                        <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ totalPages }}">{{ totalPages }}</a>
+                    {% endif %}
+
+                    {% if currentPage < totalPages %}
+                        <a href="{{ linkTo({'module': 'RebelAuditLog', 'action': 'index'}) }}&page={{ currentPage + 1 }}">
+                            Next <span class="icon-arrow-right"></span>
+                        </a>
+                    {% endif %}
                 {% endif %}
-                {% endif %}
-            </div>
+            -->
             </div>
         </div>
     </div>

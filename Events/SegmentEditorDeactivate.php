@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /**
  * The Rebel Audit Log plugin for Matomo.
@@ -34,12 +34,11 @@ class SegmentEditorDeactivate extends AbstractEventHandler
 
     public function __invoke(...$params): void
     {
-        $idSegment = implode(",", $params);
-        $segmentInfo = SegmentEditorAPI::getInstance()->get($idSegment);
-        $idSite  = $segmentInfo['enable_only_idsite'];
+        $details = $this->utility->extractEventDetails($params[1]);
+        $idSegment = $details['params']['idSegment'];
+        $log = "Deactivated segment with id {$idSegment}.";
+        $detailedLog = $this->utility->getDetails($details['params']);
 
-        $log = "Deactivated segment {$segmentInfo['name']} for site {$idSite}.";
-
-        $this->logAudit('SegmentEditor', 'deactivate', $log);
+        $this->logAudit($details['module'], $details['action'], $log, $detailedLog);
     }
 }
