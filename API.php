@@ -39,8 +39,7 @@ class API extends \Piwik\Plugin\API
         $excludeConsole = false,
         $selectedUser = null,
         $selectedEventBase = null,
-        $order = 'ASC',
-        $idSite = 1
+        $order = 'ASC'
     ) {
         Piwik::checkUserHasSuperUserAccess();
 
@@ -69,12 +68,10 @@ class API extends \Piwik\Plugin\API
             $params[] = $selectedEventBase;
         }
 
-        // Step 1: Fetch distinct keys from matomo_rebel_audit_details
         $distinctKeysQuery = "SELECT DISTINCT `key` FROM $detailsTable";
         $keys = Db::fetchAll($distinctKeysQuery);
         $dynamicColumns = [];
 
-        // Step 2: Handle dynamic columns only if keys exist
         if (!empty($keys)) {
             foreach ($keys as $keyRow) {
                 $keyName = $keyRow['key'];
@@ -85,8 +82,6 @@ class API extends \Piwik\Plugin\API
                 $params[] = $keyName;
             }
         }
-
-        // Step 3: Generate the dynamic SELECT query
         $dynamicColumnsSql = !empty($dynamicColumns) ? ', ' . implode(", ", $dynamicColumns) : '';
         $sql = "SELECT
                     a.id,
@@ -105,7 +100,41 @@ class API extends \Piwik\Plugin\API
                 ORDER BY a.timestamp $order
                 LIMIT $offset, $limit";
 
-        // Step 4: Execute the query
         return Db::fetchAll($sql, $params);
+    }
+
+    public function logAudit(
+        string $eventBase,
+        string $eventTask,
+        string $user,
+        string $ip,
+        ?string $session,
+        string $auditLog,
+        ?array $details
+    ): void {
+        $query = "INSERT INTO `" . Common::prefixTable('rebel_audit') . "`
+            (event_base, event_task, user, ip, session, audit_log) VALUES (?,?,?,?,?,?)";
+        $params = [$eventBase, $eventTask, $user, $ip, $session, $auditLog];
+
+        $db = $this->getDb();
+        $db->query($query, $params);
+        $lastId = (int) $db->lastInsertId();
+
+        if (is_array($details)) {
+            $utility = new Utility();
+            $cleanArray = $utility->removeEmpty($details);
+
+            foreach ($cleanArray as $key => $value) {
+                $query = "INSERT INTO `" . Common::prefixTable('rebel_audit_details') . "`
+                (base_id, `key`, `value`) VALUES (?,?,?)";
+                $params = [$lastId, $key, $value];
+
+                $db->query($query, $params);
+            }
+        }
+    }
+    private function getDb()
+    {
+        return Db::get();
     }
 }

@@ -16,26 +16,18 @@ class Utility
     {
         if (Common::isRunningConsoleCommand()) {
             return 'Console';
-        } else {
-            $user = APIUsersManager::getInstance()->getUser(Piwik::getCurrentUserLogin());
-            if (is_array($user)) {
-                if (!isset($user['login'])) {
-                    return 'anonymous';
-                }
-                return $user['login'];
-            }
-            return $user;
         }
+        $user = APIUsersManager::getInstance()->getUser(Piwik::getCurrentUserLogin());
+        return is_array($user) ? ($user['login'] ?? 'anonymous') : 'anonymous';
     }
 
     public function getLogin(): string
     {
         $login = StaticContainer::get(\Piwik\Auth::class)->getLogin();
-        if (empty($login) || $login == 'anonymous') {
-            $login = Request::fromRequest('form_login', false);
-            if (Piwik::getAction() === 'logme') {
-                $login = Request::fromRequest('login', $login);
-            }
+        if (empty($login) || $login === 'anonymous') {
+            $login = Piwik::getAction() === 'logme'
+                ? Request::fromRequest('login', Request::fromRequest('form_login', false))
+                : Request::fromRequest('form_login', false);
         }
         return $login;
     }
@@ -82,8 +74,7 @@ class Utility
 
     public function logger()
     {
-        $logger = StaticContainer::get(LoggerInterface::class);
-        return $logger;
+        return StaticContainer::get(LoggerInterface::class);
     }
 
     /**
@@ -111,7 +102,6 @@ class Utility
     public function getDetails(array $params): array
     {
         $logDetails = [];
-
         foreach ($params as $key => $value) {
             if (is_array($value)) {
                 $logDetails[$key] = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -119,24 +109,9 @@ class Utility
                 $logDetails[$key] = (string)$value;
             }
         }
-
         return $logDetails;
     }
-
-    /**
-     * Helper to process nested or key-value arrays
-     * @return array
-     */
-    private function flattenKeyValues(array $array): array
-    {
-        $flat = [];
-        foreach ($array as $key => $value) {
-            if (is_array($value)) {
-                $flat[] = "{$key}:" . implode(',', $this->flattenKeyValues($value));
-            } else {
-                $flat[] = "{$key}:{$value}";
-            }
-        }
-        return $flat;
+    public function truncate($string, $length, $dots = "...") {
+        return (strlen($string) > $length) ? substr($string, 0, $length - strlen($dots)) . $dots : $string;
     }
 }

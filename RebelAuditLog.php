@@ -63,7 +63,7 @@ class RebelAuditLog extends Plugin
             `user` varchar(100) NOT NULL,
             `ip` text,
             `session` varchar(191) NULL,
-            `audit_log` varchar(512) NOT NULL,
+            `audit_log` varchar(1024) NOT NULL,
             `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
             )
@@ -117,5 +117,6 @@ class RebelAuditLog extends Plugin
     public function uninstall()
     {
         Db::dropTables(Common::prefixTable('rebel_audit'));
+        Db::dropTables(Common::prefixTable('rebel_audit_details'));
     }
 }

@@ -18,7 +18,7 @@ abstract class AbstractEventHandler implements EventHandlerInterface
     }
 
     /**
-     * Extracts event details from the parameters (if required).
+     * Extracts event details from the parameters.
      */
     protected function extractEventDetails(array $params): array
     {
