@@ -1,0 +1,24 @@
+{
+    "RebelAuditLog": {
+        "AllEvents": "Alla händelser",
+        "AllUsers": "Alla användare",
+        "AuditLog": "Granskningslogg",
+        "Event": "Händelse",
+        "EventTask": "Händelsens åtgärd",
+        "ExcludeConsole": "Utelämna det som gjordes från kommandoraden (användare %s)",
+        "ExportCsv": "Exportera som CSV",
+        "Filter": "Filtrera",
+        "FilterByEvent": "Händelse",
+        "FilterByUser": "Användare",
+        "IP": "IP",
+        "Intro": "Vem som ändrade vad i Matomo, och när. Tider anges i databasens tidszon.",
+        "Log": "Logg",
+        "MoreExportFormats": "Fler exportformat",
+        "NoEntries": "Inget loggades under den här perioden.",
+        "PageOf": "Sida %1$s av %2$s",
+        "RebelAuditLog": "Granskningslogg",
+        "Timestamp": "Tid",
+        "Total": "Poster: %s",
+        "User": "Användare"
+    }
+}

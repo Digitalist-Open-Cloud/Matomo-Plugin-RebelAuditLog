@@ -1,0 +1,49 @@
+.rebelAuditLog {
+  .rebelAuditLog__brand {
+    float: right;
+  }
+
+  .rebelAuditLog__period {
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+
+  .rebelAuditLog__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    select {
+      display: block;
+      min-width: 180px;
+      height: 36px;
+    }
+  }
+
+  .rebelAuditLog__checkbox {
+    padding-bottom: 8px;
+
+    // override: core styles the text of a checkbox like a form title
+    span {
+      color: @theme-color-text;
+      font-size: 14px;
+    }
+  }
+
+  .rebelAuditLog__time {
+    white-space: nowrap;
+  }
+
+  .rebelAuditLog__message {
+    overflow-wrap: anywhere;
+  }
+
+  .rebelAuditLog__pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 16px;
+  }
+}

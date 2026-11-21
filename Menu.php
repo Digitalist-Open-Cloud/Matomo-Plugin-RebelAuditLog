@@ -29,20 +29,12 @@ class Menu extends MatomoMenu
 {
     public function configureAdminMenu(MenuAdmin $menu)
     {
-        if (Piwik::isUserHasSomeAdminAccess()) {
-            $menu->registerMenuIcon('RebelAuditLog_RebelAuditLog', 'icon-document');
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                null,
-                $this->urlForAction('index'),
-                $order = 42
-            );
-            $menu->addItem(
-                'RebelAuditLog_RebelAuditLog',
-                'RebelAuditLog_AuditLog',
-                $this->urlForAction('index'),
-                $order = 43
-            );
+        if (!Piwik::hasUserSuperUserAccess()) {
+            return;
         }
+
+        $menu->registerMenuIcon('RebelAuditLog_RebelAuditLog', 'rebelAuditLogIcon');
+        $menu->addItem('RebelAuditLog_RebelAuditLog', null, $this->urlForAction('index'), 42);
+        $menu->addItem('RebelAuditLog_RebelAuditLog', 'RebelAuditLog_AuditLog', $this->urlForAction('index'), 43);
     }
 }

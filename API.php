@@ -22,119 +22,55 @@
 namespace Piwik\Plugins\RebelAuditLog;
 
 use Piwik\Piwik;
-use Piwik\Common;
-use Piwik\Db;
 
 /**
  * Rebel Audit Log collects changes in your Matomo installation, like
  * new users, user permissions changed, a website was added or changed etc.
  * The Rebel Audit Log is accessible by super users only, and could be exported
  * in various formats.
+ *
+ * @method static \Piwik\Plugins\RebelAuditLog\API getInstance()
  */
 class API extends \Piwik\Plugin\API
 {
+    private AuditLog $auditLog;
+
+    public function __construct(AuditLog $auditLog)
+    {
+        $this->auditLog = $auditLog;
+    }
+
+    /**
+     * Returns entries of the audit log, each with its details as further columns.
+     *
+     * @param bool $excludeConsole leave out what was done from the command line
+     * @param string $selectedUser only the entries of this user
+     * @param string $selectedEventBase only the entries of this event base, eg, "UsersManager"
+     * @param string $order "ASC" for the oldest entry first or "DESC" for the newest
+     * @param string $startDate only entries from this day on, as YYYY-MM-DD
+     * @param string $endDate only entries up to and including this day, as YYYY-MM-DD
+     * @return array[]
+     */
     public function getAudits(
-        $offset = 0,
-        $limit = 50000,
-        $excludeConsole = false,
-        $selectedUser = null,
-        $selectedEventBase = null,
-        $order = 'ASC'
-    ) {
+        int $offset = 0,
+        int $limit = 50000,
+        bool $excludeConsole = false,
+        string $selectedUser = '',
+        string $selectedEventBase = '',
+        string $order = 'ASC',
+        string $startDate = '',
+        string $endDate = ''
+    ): array {
         Piwik::checkUserHasSuperUserAccess();
 
-        $offset = (int) $offset;
-        $limit = (int) $limit;
+        $entries = $this->auditLog->getEntries([
+            'excludeConsole' => $excludeConsole,
+            'user' => $selectedUser,
+            'eventBase' => $selectedEventBase,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ], $offset, $limit, strtoupper($order) === 'DESC');
 
-        $baseTable = Common::prefixTable('rebel_audit');
-        $detailsTable = Common::prefixTable('rebel_audit_details');
-
-        // Build the WHERE clause dynamically based on filters
-        $condition = "WHERE 1=1";
-        $params = [];
-
-        if ($excludeConsole) {
-            $condition .= " AND user != ?";
-            $params[] = 'Console';
-        }
-
-        if ($selectedUser) {
-            $condition .= " AND user = ?";
-            $params[] = $selectedUser;
-        }
-
-        if ($selectedEventBase) {
-            $condition .= " AND event_base = ?";
-            $params[] = $selectedEventBase;
-        }
-
-        $distinctKeysQuery = "SELECT DISTINCT `key` FROM $detailsTable";
-        $keys = Db::fetchAll($distinctKeysQuery);
-        $dynamicColumns = [];
-
-        if (!empty($keys)) {
-            foreach ($keys as $keyRow) {
-                $keyName = $keyRow['key'];
-
-                // Sanitize column name and add to SELECT clause dynamically
-                $safeColumnName = '`' . str_replace(['`'], '', $keyName) . '`';
-                $dynamicColumns[] = "MAX(CASE WHEN d.`key` = ? THEN d.`value` ELSE NULL END) AS $safeColumnName";
-                $params[] = $keyName;
-            }
-        }
-        $dynamicColumnsSql = !empty($dynamicColumns) ? ', ' . implode(", ", $dynamicColumns) : '';
-        $sql = "SELECT
-                    a.id,
-                    a.event_base,
-                    a.event_task,
-                    a.user,
-                    a.ip,
-                    a.session,
-                    a.audit_log,
-                    a.timestamp
-                    $dynamicColumnsSql
-                FROM $baseTable a
-                LEFT JOIN $detailsTable d ON a.id = d.base_id
-                $condition
-                GROUP BY a.id
-                ORDER BY a.timestamp $order
-                LIMIT $offset, $limit";
-
-        return Db::fetchAll($sql, $params);
-    }
-
-    public function logAudit(
-        string $eventBase,
-        string $eventTask,
-        string $user,
-        string $ip,
-        ?string $session,
-        string $auditLog,
-        ?array $details
-    ): void {
-        $query = "INSERT INTO `" . Common::prefixTable('rebel_audit') . "`
-            (event_base, event_task, user, ip, session, audit_log) VALUES (?,?,?,?,?,?)";
-        $params = [$eventBase, $eventTask, $user, $ip, $session, $auditLog];
-
-        $db = $this->getDb();
-        $db->query($query, $params);
-        $lastId = (int) $db->lastInsertId();
-
-        if (is_array($details)) {
-            $utility = new Utility();
-            $cleanArray = $utility->removeEmpty($details);
-
-            foreach ($cleanArray as $key => $value) {
-                $query = "INSERT INTO `" . Common::prefixTable('rebel_audit_details') . "`
-                (base_id, `key`, `value`) VALUES (?,?,?)";
-                $params = [$lastId, $key, $value];
-
-                $db->query($query, $params);
-            }
-        }
-    }
-    private function getDb()
-    {
-        return Db::get();
+        return $this->auditLog->addDetails($entries);
     }
 }
