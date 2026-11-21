@@ -1,7 +1,7 @@
 {
     "name": "RebelAuditLog",
     "description": "An audit log for Matomo: who changed what, and when.",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "theme": false,
     "require": {
         "php": ">=7.4.0",
