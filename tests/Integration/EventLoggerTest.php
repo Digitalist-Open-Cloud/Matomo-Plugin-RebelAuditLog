@@ -4,12 +4,17 @@ namespace Piwik\Plugins\RebelAuditLog\tests\Integration;
 
 use Piwik\API\Request;
 use Piwik\Common;
+use Piwik\Container\StaticContainer;
+use Piwik\Date;
 use Piwik\Db;
 use Piwik\Piwik;
 use Piwik\Plugin\Manager;
 use Piwik\Plugins\Login\SystemSettings as LoginSettings;
 use Piwik\Plugins\RebelAuditLog\AuditLog;
 use Piwik\Plugins\RebelAuditLog\EventLogger;
+use Piwik\Plugins\RebelAuditLog\SystemSettings;
+use Piwik\Plugins\RebelAuditLog\Tasks;
+use Piwik\Plugins\UsersManager\Model as UsersManagerModel;
 use Piwik\Tests\Framework\Fixture;
 use Piwik\Tests\Framework\Mock\FakeAccess;
 use Piwik\Tests\Framework\TestCase\IntegrationTestCase;
@@ -134,6 +139,80 @@ class EventLoggerTest extends IntegrationTestCase
         $this->assertLastEntry('CoreAdminHome', 'invalidateArchivedReports', "Archives invalidated for site id: {$this->idSite} and dates 2024-03-05.");
     }
 
+    public function testAChangedPasswordIsLoggedWithoutThePassword()
+    {
+        Piwik::postEvent('UsersManager.updateUser.end', ['bo', true, 'bo@example.org', 'the-new-password']);
+
+        $this->assertStringNotContainsString('the-new-password', json_encode($this->getEntries()));
+    }
+
+    public function testUsersCanBeDeletedAndLoseCapabilitiesAndThatIsLogged()
+    {
+        $this->call('UsersManager.addUser', ['userLogin' => 'anna', 'password' => 'a-long-secret-1', 'email' => 'anna@example.org']);
+        $this->call('UsersManager.setUserAccess', ['userLogin' => 'anna', 'access' => 'write', 'idSites' => [$this->idSite], 'passwordConfirmation' => Fixture::ADMIN_USER_PASSWORD]);
+
+        $this->call('UsersManager.removeCapabilities', ['userLogin' => 'anna', 'capabilities' => ['tagmanager_write'], 'idSites' => [$this->idSite]]);
+        $this->assertLastEntry('UsersManager', 'removeCapabilities', "Removed capabilities tagmanager_write of user anna for site id {$this->idSite}.");
+
+        $this->call('UsersManager.deleteUser', ['userLogin' => 'anna', 'passwordConfirmation' => Fixture::ADMIN_USER_PASSWORD]);
+        $this->assertContains('User anna deleted.', array_column($this->getEntries(), 'audit_log'));
+    }
+
+    public function testApiTokensCreatedAndDeletedInTheUiAreLogged()
+    {
+        $model = new UsersManagerModel();
+        $login = Piwik::getCurrentUserLogin();
+
+        Piwik::postEvent('Controller.UsersManager.addNewToken', [[]]);
+        $model->addTokenAuth($login, $model->generateRandomTokenAuth(), 'For the importer', Date::now()->getDatetime());
+        Piwik::postEvent('Controller.UsersManager.addNewToken.end', ['', []]);
+        $this->assertLastEntry('UsersManager', 'addNewToken', "User $login created an API token.");
+
+        // Opening the form creates nothing.
+        Piwik::postEvent('Controller.UsersManager.addNewToken', [[]]);
+        Piwik::postEvent('Controller.UsersManager.addNewToken.end', ['', []]);
+        $this->assertCount(1, $this->getEntries());
+
+        $tokens = count($model->getAllNonSystemTokensForLogin($login));
+        Piwik::postEvent('Controller.UsersManager.deleteToken', [[]]);
+        $model->deleteAllTokensForUser($login);
+        Piwik::postEvent('Controller.UsersManager.deleteToken.end', ['', []]);
+        $this->assertLastEntry('UsersManager', 'deleteToken', "User $login deleted API tokens: $tokens.");
+    }
+
+    public function testScheduledReportsAreLogged()
+    {
+        $idReport = $this->call('ScheduledReports.addReport', [
+            'idSite' => $this->idSite, 'description' => 'Weekly numbers', 'period' => 'week', 'hour' => 8, 'reportType' => 'email',
+            'reportFormat' => 'pdf', 'reports' => ['VisitsSummary_get'], 'parameters' => ['emailMe' => true, 'displayFormat' => 1, 'additionalEmails' => ['boss@example.org']],
+        ]);
+        $this->assertLastEntry('ScheduledReports', 'addReport', "Added scheduled report Weekly numbers for site {$this->idSite}.");
+
+        $this->call('ScheduledReports.deleteReport', ['idReport' => $idReport]);
+        $this->assertLastEntry('ScheduledReports', 'deleteReport', "Deleted scheduled report with id $idReport.");
+    }
+
+    public function testOldEntriesAreDeletedWhenTheSettingSaysSoAndThatIsLogged()
+    {
+        $old = $this->auditLog->add('Goals', 'addGoal', 'anna', '', null, 'Old entry.', ['name' => 'Old']);
+        $this->auditLog->add('Goals', 'addGoal', 'anna', '', null, 'New entry.', []);
+        Db::query('UPDATE ' . Common::prefixTable(AuditLog::TABLE) . ' SET `timestamp` = ? WHERE id = ?', [Date::today()->subMonth(4)->getDatetime(), $old]);
+        $tasks = new Tasks();
+
+        $tasks->deleteOldEntries();
+        $this->assertCount(2, $this->getEntries(), 'entries are kept forever by default');
+
+        $settings = StaticContainer::get(SystemSettings::class);
+        $settings->getSetting(SystemSettings::KEEP_MONTHS)->setValue(3);
+        $tasks->deleteOldEntries();
+
+        $messages = array_column($this->getEntries(), 'audit_log');
+        $this->assertCount(2, $messages);
+        $this->assertContains('New entry.', $messages);
+        $this->assertStringContainsString('Deleted entries from before', $messages[0]);
+        $this->assertSame('0', (string) Db::fetchOne('SELECT COUNT(*) FROM ' . Common::prefixTable(AuditLog::DETAILS_TABLE) . ' WHERE base_id = ?', [$old]));
+    }
+
     public function testAFailedApiCallIsNotLogged()
     {
         try {
@@ -170,6 +249,15 @@ class EventLoggerTest extends IntegrationTestCase
     public function getEventsOfMatomo(): array
     {
         return [
+            ['UsersManager.deleteUser', ['bo'], 'UsersManager', 'deleteUser', 'User bo deleted.'],
+            ['UsersManager.updateUser.end', ['bo', true, 'bo@example.org', 'the-new-password'], 'UsersManager', 'updateUser.end', 'User bo changed. The password was changed.'],
+            ['UsersManager.updateUser.end', ['bo', false, 'bo@example.org', ''], 'UsersManager', 'updateUser.end', 'User bo changed.'],
+            ['UsersManager.inviteUser.accepted', ['bo', 'bo@example.org', 'anna'], 'UsersManager', 'inviteUser.accepted', 'User bo (bo@example.org) accepted the invitation.'],
+            ['TwoFactorAuth.enabled', ['bo'], 'TwoFactorAuth', 'enabled', 'Two-factor authentication was turned on for user bo.'],
+            ['TwoFactorAuth.disabled', ['bo'], 'TwoFactorAuth', 'disabled', 'Two-factor authentication was turned off for user bo.'],
+            ['Login.resetPassword.initiated', ['bo'], 'Login', 'resetPassword.initiated', 'A password reset was requested for user bo.'],
+            ['Login.resetPassword.confirmed', ['bo'], 'Login', 'resetPassword.confirmed', 'The password of user bo was reset.'],
+            ['Login.logout', ['bo'], 'Login', 'logout', 'User bo logged out.'],
             ['PluginManager.pluginActivated', ['Goals'], 'PluginManager', 'pluginActivated', 'Plugin Goals activated.'],
             ['PluginManager.pluginDeactivated', ['Goals'], 'PluginManager', 'pluginDeactivated', 'Plugin Goals deactivated.'],
             ['PluginManager.pluginInstalled', ['Goals'], 'PluginManager', 'pluginInstalled', 'Plugin Goals installed.'],

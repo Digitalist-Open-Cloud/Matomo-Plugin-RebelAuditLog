@@ -9,8 +9,11 @@ can be read by super users only.
 
 ## What is logged
 
-- Logins, successful and failed.
-- Users: added, invited, access, super user access and capabilities changed.
+- Logins, successful and failed, logouts and password resets.
+- Users: added, invited, changed, deleted, access, super user access and capabilities changed.
+- API tokens created and deleted, and two-factor authentication turned on or off.
+- Scheduled email reports added, changed, deleted and sent by hand.
+- Reports of RebelMyReports and funnels of RebelFunnels added, changed and deleted.
 - Websites, goals, segments, annotations, dashboards and custom dimensions: added, changed
   and deleted.
 - Privacy settings, GDPR tools and invalidated reports.
@@ -40,6 +43,48 @@ activate it:
 
 Administration > Audit log shows the entries of a period, newest first. They
 can be filtered by user and by event, and exported as CSV with their details.
+
+## How long entries are kept
+
+By default entries are kept forever. A super user can set "Months to keep entries" under
+Administration > System > General settings, in the RebelAuditLog section. Older entries are
+then deleted once a day, and the deletion is logged. The log holds IP addresses and logins,
+which are personal data.
+
+## External database
+
+The log can also be written to a database outside Matomo, so that it does not depend on
+Matomo's own database and cannot be changed from within Matomo. MariaDB, MySQL and PostgreSQL
+are supported; PostgreSQL needs PHP's `pdo_pgsql` extension. Add to `config/config.ini.php`:
+
+```ini
+[RebelAuditLog]
+; "mysql:host=...;port=3306;dbname=..." or "pgsql:host=...;port=5432;dbname=..."
+external_dsn = "pgsql:host=audit.example.org;port=5432;dbname=audit"
+external_username = "<user>"
+external_password = "<password>"
+; Optional: a prefix for the two tables.
+external_table_prefix = ""
+; Optional: tells the entries of this Matomo from others in the same database.
+; By default the host name of Matomo.
+external_source = ""
+```
+
+Create the tables and check the connection:
+
+```sh
+./console rebelauditlog:external-db --create-tables
+./console rebelauditlog:external-db
+```
+
+`--print-sql` prints the statements instead, for a database where Matomo's user may not create
+tables. After that the user only needs to insert into the two tables.
+
+Every entry is written to Matomo's database first and then to the external one, with its
+details. The page and the API read from Matomo's database. If the external database cannot be
+reached, the entry is still in Matomo's database, the failure is reported in Matomo's log and
+what the user did goes on; such an entry is not sent again later. Deleting old entries does
+not touch the external database.
 
 ## API
 

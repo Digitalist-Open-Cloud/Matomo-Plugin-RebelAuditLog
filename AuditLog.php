@@ -22,9 +22,11 @@
 namespace Piwik\Plugins\RebelAuditLog;
 
 use Piwik\Common;
+use Piwik\Container\StaticContainer;
 use Piwik\Date;
 use Piwik\Db;
 use Piwik\DbHelper;
+use Piwik\Log\LoggerInterface;
 
 /**
  * The stored audit log: one entry per logged action, with its details as keys and values.
@@ -79,20 +81,43 @@ class AuditLog
      */
     public function add(string $eventBase, string $eventTask, string $user, string $ip, ?string $session, string $log, array $details): int
     {
+        // Cut to what the columns hold: an entry must not be lost because, say, a login that was
+        // tried is too long.
+        $eventBase = mb_substr($eventBase, 0, 255);
+        $eventTask = mb_substr($eventTask, 0, 255);
+        $user = mb_substr($user, 0, 100);
+        $log = mb_substr($log, 0, 1024);
+        $shortDetails = [];
+        foreach ($details as $key => $value) {
+            $shortDetails[mb_substr((string) $key, 0, 512)] = $value;
+        }
+
         $db = Db::get();
         $db->query(
             'INSERT INTO `' . Common::prefixTable(self::TABLE) . '` (event_base, event_task, user, ip, session, audit_log) VALUES (?,?,?,?,?,?)',
-            // Cut to what the columns hold: an entry must not be lost because, say, a login
-            // that was tried is too long.
-            [mb_substr($eventBase, 0, 255), mb_substr($eventTask, 0, 255), mb_substr($user, 0, 100), $ip, $session, mb_substr($log, 0, 1024)]
+            [$eventBase, $eventTask, $user, $ip, $session, $log]
         );
         $id = (int) $db->lastInsertId();
 
-        foreach ($details as $key => $value) {
+        foreach ($shortDetails as $key => $value) {
             $db->query(
                 'INSERT INTO `' . Common::prefixTable(self::DETAILS_TABLE) . '` (base_id, `key`, `value`) VALUES (?,?,?)',
-                [$id, mb_substr((string) $key, 0, 512), $value]
+                [$id, $key, $value]
             );
+        }
+
+        $external = new ExternalLog();
+        if ($external->isConfigured()) {
+            try {
+                $external->add($eventBase, $eventTask, $user, $ip, $session, $log, $shortDetails);
+            } catch (\Throwable $e) {
+                // The entry is in Matomo's database. What was done goes on.
+                ExternalLog::disconnect();
+                StaticContainer::get(LoggerInterface::class)->error(
+                    'RebelAuditLog: an entry could not be written to the external database: {message}',
+                    ['message' => $e->getMessage()]
+                );
+            }
         }
 
         return $id;
@@ -144,6 +169,24 @@ class AuditLog
         }
 
         return $entries;
+    }
+
+    /**
+     * Deletes the entries from before the day, with their details.
+     *
+     * @return int how many entries were deleted
+     */
+    public function deleteOlderThan(Date $day): int
+    {
+        $table = Common::prefixTable(self::TABLE);
+        $before = $day->toString() . ' 00:00:00';
+
+        Db::query(
+            'DELETE d FROM `' . Common::prefixTable(self::DETAILS_TABLE) . "` d INNER JOIN `$table` a ON a.id = d.base_id WHERE a.`timestamp` < ?",
+            [$before]
+        );
+
+        return (int) Db::query("DELETE FROM `$table` WHERE `timestamp` < ?", [$before])->rowCount();
     }
 
     public function count(array $filters): int

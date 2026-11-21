@@ -26,6 +26,7 @@ use Piwik\Container\StaticContainer;
 use Piwik\IP;
 use Piwik\Log\LoggerInterface;
 use Piwik\Piwik;
+use Piwik\Plugins\UsersManager\Model as UsersManagerModel;
 use Piwik\Settings\FieldConfig;
 
 /**
@@ -71,6 +72,24 @@ class EventLogger
         'PrivacyManager.setDeleteLogsSettings' => 'Set to delete logs older than {deleteLogsOlderThan} days.',
         'PrivacyManager.setDeleteReportsSettings' => 'Set to delete reports older than {deleteReportsOlderThan} months.',
         'PrivacyManager.setScheduleReportDeletionSettings' => '',
+        'RebelFunnels.addFunnel' => 'Added funnel {name} for site {idSite}.',
+        'RebelFunnels.deleteFunnel' => 'Deleted funnel with id {idFunnel} for site {idSite}.',
+        'RebelFunnels.updateFunnel' => 'Updated funnel {name} ({idFunnel}) for site {idSite}.',
+        'RebelMyReports.addCalculatedMetric' => 'Added calculated metric {name} for site {idSite}.',
+        'RebelMyReports.addExampleReport' => 'Added example report {example} for site {idSite}.',
+        'RebelMyReports.addReport' => 'Added report {name} for site {idSite}.',
+        'RebelMyReports.deleteCalculatedMetric' => 'Deleted calculated metric with id {idMetric} for site {idSite}.',
+        'RebelMyReports.deleteReport' => 'Deleted report with id {idMyReport} for site {idSite}.',
+        'RebelMyReports.duplicateReport' => 'Duplicated report with id {idMyReport} of site {idSite}.',
+        'RebelMyReports.invalidateReports' => 'Marked the data of reports as outdated for {period} {date}.',
+        'RebelMyReports.pauseReport' => 'Paused report with id {idMyReport} for site {idSite}.',
+        'RebelMyReports.resumeReport' => 'Resumed report with id {idMyReport} for site {idSite}.',
+        'RebelMyReports.updateCalculatedMetric' => 'Updated calculated metric {name} ({idMetric}) for site {idSite}.',
+        'RebelMyReports.updateReport' => 'Updated report {name} ({idMyReport}) for site {idSite}.',
+        'ScheduledReports.addReport' => 'Added scheduled report {description} for site {idSite}.',
+        'ScheduledReports.deleteReport' => 'Deleted scheduled report with id {idReport}.',
+        'ScheduledReports.sendReport' => 'Sent scheduled report with id {idReport}.',
+        'ScheduledReports.updateReport' => 'Updated scheduled report {description} ({idReport}) for site {idSite}.',
         'SegmentEditor.add' => 'Added segment {name} for site {idSite}.',
         'SegmentEditor.delete' => 'Deleted segment with id {idSegment}.',
         'SegmentEditor.update' => 'Updated segment {name} for site {idSite}.',
@@ -97,6 +116,8 @@ class EventLogger
         'TagManager.updateContainerVariable' => 'Updated container variable {name} for site id {idSite}.',
         'TagManager.updateContainerVersion' => 'A container version was updated for container id {idContainer} for site id {idSite}.',
         'UsersManager.addCapabilities' => 'Changed capabilities of user {userLogin}.',
+        'UsersManager.createAppSpecificTokenAuth' => 'Created an API token {description} for user {userLogin}.',
+        'UsersManager.removeCapabilities' => 'Removed capabilities {capabilities} of user {userLogin} for site id {idSites}.',
         'UsersManager.setSuperUserAccess' => '',
         'UsersManager.setUserAccess' => 'Changed access of user {userLogin} to {access} for site id {idSites}.',
     ];
@@ -114,8 +135,17 @@ class EventLogger
         'BotTracker.insertBot.successful' => 'logBotInserted',
         'BotTracker.updateBot.successful' => 'logBotUpdated',
         'Core.configFileChanged' => 'logConfigFileChanged',
+        // The UI creates and deletes API tokens without an event of their own.
+        'Controller.UsersManager.addNewToken' => 'rememberTokenCount',
+        'Controller.UsersManager.addNewToken.end' => 'logTokenChange',
+        'Controller.UsersManager.deleteToken' => 'rememberTokenCount',
+        'Controller.UsersManager.deleteToken.end' => 'logTokenChange',
         'Login.authenticate.failed' => 'logLoginFailed',
         'Login.authenticate.successful' => 'logLoginSuccessful',
+        'Login.logout' => 'logLogout',
+        'Login.resetPassword.cancelled' => 'logPasswordResetCancelled',
+        'Login.resetPassword.confirmed' => 'logPasswordResetConfirmed',
+        'Login.resetPassword.initiated' => 'logPasswordResetInitiated',
         'PluginManager.pluginActivated' => 'logPluginActivated',
         'PluginManager.pluginDeactivated' => 'logPluginDeactivated',
         'PluginManager.pluginInstalled' => 'logPluginInstalled',
@@ -123,8 +153,14 @@ class EventLogger
         'SystemSettings.updated' => 'logSystemSettingsUpdated',
         'TagManager.containerFileChanged' => 'logContainerFileChanged',
         'TagManager.containerFileDeleted' => 'logContainerFileDeleted',
+        'TwoFactorAuth.disabled' => 'logTwoFactorDisabled',
+        'TwoFactorAuth.enabled' => 'logTwoFactorEnabled',
         'UsersManager.addUser.end' => 'logUserAdded',
+        'UsersManager.deleteUser' => 'logUserDeleted',
+        'UsersManager.inviteUser.accepted' => 'logInviteAccepted',
+        'UsersManager.inviteUser.declined' => 'logInviteDeclined',
         'UsersManager.inviteUser.end' => 'logUserInvited',
+        'UsersManager.updateUser.end' => 'logUserUpdated',
         'VisitorGenerator.VisitsFake.trackVisit' => 'logFakeVisit',
     ];
 
@@ -134,6 +170,9 @@ class EventLogger
     private const MAX_LENGTH_IN_MESSAGE = 100;
 
     private AuditLog $auditLog;
+
+    // How many API tokens the current user had before the request created or deleted some.
+    private ?int $tokenCount = null;
 
     public function __construct(AuditLog $auditLog)
     {
@@ -207,6 +246,62 @@ class EventLogger
         $this->log('Login', 'authenticate.successful', "User $login logged in successfully.", [], $login);
     }
 
+    public function logLogout($login = ''): void
+    {
+        $login = $this->toText($login);
+        $this->log('Login', 'logout', "User $login logged out.", [], $login);
+    }
+
+    public function logPasswordResetInitiated($login = ''): void
+    {
+        $login = $this->toText($login);
+        $this->log('Login', 'resetPassword.initiated', "A password reset was requested for user $login.", [], $login);
+    }
+
+    public function logPasswordResetConfirmed($login = ''): void
+    {
+        $login = $this->toText($login);
+        $this->log('Login', 'resetPassword.confirmed', "The password of user $login was reset.", [], $login);
+    }
+
+    public function logPasswordResetCancelled($login = ''): void
+    {
+        $login = $this->toText($login);
+        $this->log('Login', 'resetPassword.cancelled', "The password reset of user $login was cancelled.", [], $login);
+    }
+
+    public function logTwoFactorEnabled($login = ''): void
+    {
+        $this->log('TwoFactorAuth', 'enabled', "Two-factor authentication was turned on for user {$this->toText($login)}.");
+    }
+
+    public function logTwoFactorDisabled($login = ''): void
+    {
+        $this->log('TwoFactorAuth', 'disabled', "Two-factor authentication was turned off for user {$this->toText($login)}.");
+    }
+
+    public function rememberTokenCount(): void
+    {
+        $this->tokenCount = $this->countTokens();
+    }
+
+    public function logTokenChange(): void
+    {
+        if ($this->tokenCount === null) {
+            return;
+        }
+
+        $change = $this->countTokens() - $this->tokenCount;
+        $this->tokenCount = null;
+        $login = Piwik::getCurrentUserLogin();
+
+        if ($change > 0) {
+            $this->log('UsersManager', 'addNewToken', "User $login created an API token.");
+        } elseif ($change < 0) {
+            $this->log('UsersManager', 'deleteToken', "User $login deleted API tokens: " . -$change . '.');
+        }
+    }
+
     public function logPluginActivated($plugin = ''): void
     {
         $this->log('PluginManager', 'pluginActivated', "Plugin {$this->toText($plugin)} activated.");
@@ -259,6 +354,32 @@ class EventLogger
     public function logUserAdded($login = '', $email = ''): void
     {
         $this->log('UsersManager', 'addUser.end', "User {$this->toText($login)} ({$this->toText($email)}) added.");
+    }
+
+    public function logUserDeleted($login = ''): void
+    {
+        $this->log('UsersManager', 'deleteUser', "User {$this->toText($login)} deleted.");
+    }
+
+    /**
+     * @param mixed $passwordChanged
+     */
+    public function logUserUpdated($login = '', $passwordChanged = false, $email = ''): void
+    {
+        $message = "User {$this->toText($login)} changed." . ($passwordChanged ? ' The password was changed.' : '');
+        $this->log('UsersManager', 'updateUser.end', $message, ['userLogin' => $login, 'email' => $email]);
+    }
+
+    public function logInviteAccepted($login = '', $email = ''): void
+    {
+        $login = $this->toText($login);
+        $this->log('UsersManager', 'inviteUser.accepted', "User $login ({$this->toText($email)}) accepted the invitation.", [], $login);
+    }
+
+    public function logInviteDeclined($login = '', $email = ''): void
+    {
+        $login = $this->toText($login);
+        $this->log('UsersManager', 'inviteUser.declined', "User $login ({$this->toText($email)}) declined the invitation.", [], $login);
     }
 
     public function logUserInvited($login = '', $email = ''): void
@@ -357,6 +478,11 @@ class EventLogger
                 );
             }
         };
+    }
+
+    private function countTokens(): int
+    {
+        return count((new UsersManagerModel())->getAllNonSystemTokensForLogin(Piwik::getCurrentUserLogin()));
     }
 
     private function isSecretName(string $name): bool

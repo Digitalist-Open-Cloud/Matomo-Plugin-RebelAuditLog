@@ -3,6 +3,7 @@
         "AllEvents": "All events",
         "AllUsers": "All users",
         "AuditLog": "Audit log",
+        "ErrorKeepMonths": "Enter a whole number of months, or 0 to keep entries forever.",
         "Event": "Event",
         "EventTask": "Event task",
         "ExcludeConsole": "Leave out what was done from the command line (user %s)",
@@ -17,6 +18,8 @@
         "NoEntries": "Nothing was logged in this period.",
         "PageOf": "Page %1$s of %2$s",
         "RebelAuditLog": "Audit log",
+        "SettingKeepMonths": "Months to keep entries",
+        "SettingKeepMonthsHelp": "Entries older than this are deleted once a day. 0 keeps them forever. The log holds IP addresses and logins, which are personal data.",
         "Timestamp": "Time",
         "Total": "Entries: %s",
         "User": "User"
