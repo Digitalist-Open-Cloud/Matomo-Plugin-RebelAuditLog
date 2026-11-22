@@ -13,7 +13,8 @@ can be read by super users only.
 - Users: added, invited, changed, deleted, access, super user access and capabilities changed.
 - API tokens created and deleted, and two-factor authentication turned on or off.
 - Scheduled email reports added, changed, deleted and sent by hand.
-- Reports of RebelMyReports and funnels of RebelFunnels added, changed and deleted.
+- Reports of RebelMyReports, funnels of RebelFunnels and experiments of RebelABTesting added,
+  changed and deleted.
 - Websites, goals, segments, annotations, dashboards and custom dimensions: added, changed
   and deleted.
 - Privacy settings, GDPR tools and invalidated reports.
