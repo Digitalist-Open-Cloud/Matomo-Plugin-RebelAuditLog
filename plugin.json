@@ -1,32 +1,28 @@
 {
-    "name": "RebelAudit",
-    "description": "Audit logs for Matomo",
-    "version": "0.1.0",
+    "name": "RebelAuditLog",
+    "description": "An audit log for Matomo: who changed what, and when.",
+    "version": "0.2.0",
     "theme": false,
     "require": {
-        "matomo": ">=5.1.2-stable,<6.0.0-b1"
+        "php": ">=7.4.0",
+        "matomo": ">=5.14.1,<6.0.0-b1"
     },
     "authors": [
         {
-            "name": "Matomo",
-            "email": "",
-            "homepage": ""
+            "name": "Digitalist",
+            "email": "cloud@digitalist.com",
+            "homepage": "https://digitalist.cloud"
         }
     ],
     "support": {
-        "email": "",
-        "issues": "",
-        "forum": "",
-        "irc": "",
-        "wiki": "",
-        "source": "",
-        "docs": "",
-        "rss": ""
+        "issues": "https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelAuditLog/issues",
+        "source": "https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelAuditLog"
     },
-    "homepage": "",
-    "license": "GPL v3+",
-    "keywords": [],
-    "assets": [
-        "vue/main.js"
+    "homepage": "https://digitalist.cloud/matomo",
+    "license": "GPL-3.0-or-later",
+    "keywords": [
+        "audit",
+        "log",
+        "security"
     ]
 }

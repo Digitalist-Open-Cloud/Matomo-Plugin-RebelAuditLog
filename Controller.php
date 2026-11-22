@@ -21,184 +21,60 @@
 
 namespace Piwik\Plugins\RebelAuditLog;
 
-use Piwik\Common;
-use Piwik\Db;
-use Piwik\Piwik;
-use Piwik\View;
-use Piwik\Container\StaticContainer;
-use Piwik\Request;
 use Piwik\Period\Factory;
+use Piwik\Piwik;
+use Piwik\Plugin\ControllerAdmin;
+use Piwik\Request;
 
-//use Piwik\Plugins\RebelAuditLog\Utility;
-
-class Controller extends \Piwik\Plugin\Controller
+class Controller extends ControllerAdmin
 {
-    private function getAudits(
-        $offset = 0,
-        $limit = 50,
-        $excludeConsole = false,
-        $selectedUser = null,
-        $selectedEventBase = null,
-        $sortDirection = 'DESC',
-        $startDate = null,
-        $endDate = null
-    ) {
-        $offset = (int) $offset;
-        $limit = (int) $limit;
+    private const ENTRIES_PER_PAGE = 50;
 
-        $condition = "WHERE 1=1";
-        $params = [];
-
-        if ($excludeConsole) {
-            $condition .= " AND user != ?";
-            $params[] = 'Console';
-        }
-        if ($selectedUser) {
-            $condition .= " AND user = ?";
-            $params[] = $selectedUser;
-        }
-        if ($selectedEventBase) {
-            $condition .= " AND event_base = ?";
-            $params[] = $selectedEventBase;
-        }
-        if ($startDate && $endDate) {
-            $condition .= " AND timestamp BETWEEN ? AND ?";
-            // Log the start and end date for debugging
-            // $util = new Utility();
-            //$util->logger()->warn("Start Date: " . $startDate);
-            //$util->logger()->warn("End Date: " . $endDate);
-
-            $params[] = $startDate . ' 00:00:00';
-            $params[] = $endDate . ' 23:59:59';
-        }
-
-        $sql = "SELECT
-                    id,
-                    event_base,
-                    event_task,
-                    user,
-                    ip,
-                    audit_log,
-                    timestamp
-                FROM " . Common::prefixTable('rebel_audit') . "
-                $condition
-                ORDER BY timestamp $sortDirection
-                LIMIT $offset, $limit";
-
-        return Db::fetchAll($sql, $params);
-    }
-
-    private function totalAudits(
-        $excludeConsole = false,
-        $selectedUser = null,
-        $selectedEventBase = null,
-        $startDate = null,
-        $endDate = null
-    ) {
-        $condition = "WHERE 1=1";
-        $params = [];
-
-        if ($excludeConsole) {
-            $condition .= " AND user != ?";
-            $params[] = 'Console';
-        }
-        if ($selectedUser) {
-            $condition .= " AND user = ?";
-            $params[] = $selectedUser;
-        }
-        if ($selectedEventBase) {
-            $condition .= " AND event_base = ?";
-            $params[] = $selectedEventBase;
-        }
-        if ($startDate && $endDate) {
-            $condition .= " AND timestamp BETWEEN ? AND ?";
-            // Log the start and end date for debugging
-            //$util = new Utility();
-            //$util->logger()->warn("Start Date: " . $startDate);
-            //$util->logger()->warn("End Date: " . $endDate);
-            $params[] = $startDate . ' 00:00:00';
-            $params[] = $endDate . ' 23:59:59';
-        }
-
-        $sql = "SELECT COUNT(*) as total FROM " . Common::prefixTable('rebel_audit') . " $condition";
-        $total = (int) Db::fetchOne($sql, $params);
-
-        return $total;
-    }
-
-    private function getUsers()
-    {
-        $sql = "SELECT DISTINCT user FROM " . Common::prefixTable('rebel_audit');
-        return Db::fetchAll($sql);
-    }
-
-    private function getEventBases()
-    {
-        $sql = "SELECT DISTINCT event_base FROM " . Common::prefixTable('rebel_audit');
-        return Db::fetchAll($sql);
-    }
-
-    public function index()
+    /**
+     * The audit log as a page: the entries of a period, newest first, with filters.
+     */
+    public function index(): string
     {
         Piwik::checkUserHasSuperUserAccess();
 
-        $page = Request::fromRequest()->getIntegerParameter('page', 1);
-        $limit = 50;
-        $offset = ($page - 1) * $limit;
-        $excludeConsole = Request::fromRequest()->getBoolParameter('excludeConsole', false);
-        $selectedEventBase = Request::fromRequest()->getStringParameter('event_base', '');
-        $selectedUser = Request::fromRequest()->getStringParameter('user', '');
-        $period = Request::fromRequest()->getStringParameter('period', 'day');
-        $date = Request::fromRequest()->getStringParameter('date', 'today');
-        list($startDate, $endDate) = $this->calculateDateRange($period, $date);
+        $request = Request::fromRequest();
+        $period = $request->getStringParameter('period', 'day');
+        $date = $request->getStringParameter('date', 'today');
+        $filters = [
+            'excludeConsole' => $request->getBoolParameter('excludeConsole', false),
+            'user' => $request->getStringParameter('user', ''),
+            'eventBase' => $request->getStringParameter('event_base', ''),
+        ];
 
-        $audits = $this->getAudits(
-            $offset,
-            $limit,
-            $excludeConsole,
-            $selectedUser,
-            $selectedEventBase,
-            'DESC',
-            $startDate,
-            $endDate
-        );
-        $totalAudits = $this->totalAudits($excludeConsole, $selectedUser, $selectedEventBase, $startDate, $endDate);
-        $totalPages = ceil($totalAudits / $limit);
-        $users = $this->getUsers();
-        $eventBases = $this->getEventBases();
+        $periodOfLog = Factory::build($period, $date);
+        $dates = [
+            'startDate' => $periodOfLog->getDateStart()->toString(),
+            'endDate' => $periodOfLog->getDateEnd()->toString(),
+        ];
 
-        $view = new View('@RebelAudit/index');
-        $this->setBasicVariablesView($view);
+        $auditLog = new AuditLog();
+        $total = $auditLog->count($filters + $dates);
+        $totalPages = max(1, (int) ceil($total / self::ENTRIES_PER_PAGE));
+        $page = min($totalPages, max(1, $request->getIntegerParameter('page', 1)));
 
         return $this->renderTemplate('index', [
-            'audits' => $audits,
-            'total' => $totalAudits,
+            'audits' => $auditLog->getEntries($filters + $dates, ($page - 1) * self::ENTRIES_PER_PAGE, self::ENTRIES_PER_PAGE, true),
+            'total' => $total,
             'currentPage' => $page,
-            'users' => $users,
-            'eventBases' => $eventBases,
             'totalPages' => $totalPages,
-            'excludeConsole' => $excludeConsole,
-            'selectedEventBase' => $selectedEventBase,
-            'selectedUser' => $selectedUser,
-            'currentDate' => $date,
-            'currentPeriod' => $period
+            'users' => $auditLog->getUsers(),
+            'eventBases' => $auditLog->getEventBases(),
+            'filters' => $filters,
+            'dates' => $dates,
+            'consoleUser' => AuditLog::CONSOLE_USER,
+            // What the links to other pages and the export have to keep.
+            'query' => [
+                'period' => $period,
+                'date' => $date,
+                'user' => $filters['user'],
+                'event_base' => $filters['eventBase'],
+                'excludeConsole' => (int) $filters['excludeConsole'],
+            ],
         ]);
-    }
-
-    private function calculateDateRange($period, $date)
-    {
-        try {
-            $periodObj = Factory::build($period, $date);
-            $startDate = $periodObj->getDateStart()->toString('Y-m-d');
-            $endDate = $periodObj->getDateEnd()->toString('Y-m-d');
-
-            return [$startDate, $endDate];
-        } catch (\Exception $e) {
-            StaticContainer::get('Psr\Log\LoggerInterface')->error(
-                'Error calculating date range: {message}',
-                ['message' => $e->getMessage()]
-            );
-            return [null, null];
-        }
     }
 }
