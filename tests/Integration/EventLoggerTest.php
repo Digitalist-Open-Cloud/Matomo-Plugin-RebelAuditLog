@@ -266,6 +266,11 @@ class EventLoggerTest extends IntegrationTestCase
             ['TagManager.containerFileChanged', ['container_a.js'], 'TagManager', 'containerFileChanged', 'Container file container_a.js changed.'],
             ['UsersManager.inviteUser.end', ['bo', 'bo@example.org'], 'UsersManager', 'inviteUser.end', 'User bo (bo@example.org) invited.'],
             ['BotTracker.insertBot.successful', [3, ['botName' => 'Crawler', 'botActive' => 1]], 'BotTracker', 'insertBot.successful', 'Bot Crawler added for site 3.'],
+            ['UserFeedback.form.created', [3, 7, 'Page feedback'], 'UserFeedback', 'form.created', 'Added feedback form Page feedback (7) for site 3.'],
+            ['UserFeedback.form.edit', [3, 7, 'Page feedback'], 'UserFeedback', 'form.edit', 'Updated feedback form Page feedback (7) for site 3.'],
+            ['UserFeedback.form.copied', [3, 8, 'Page feedback copy', 7], 'UserFeedback', 'form.copied', 'Copied feedback form with id 7 to Page feedback copy (8) for site 3.'],
+            ['UserFeedback.form.deleted', [3, 7, 'Page feedback'], 'UserFeedback', 'form.deleted', 'Deleted feedback form Page feedback (7) for site 3.'],
+            ['UserFeedback.feedback.deleted', [3, [11, 12]], 'UserFeedback', 'feedback.deleted', 'Deleted feedback answers with id 11, 12 for site 3.'],
         ];
     }
 

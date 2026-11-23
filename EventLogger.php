@@ -72,10 +72,12 @@ class EventLogger
         'PrivacyManager.setDeleteLogsSettings' => 'Set to delete logs older than {deleteLogsOlderThan} days.',
         'PrivacyManager.setDeleteReportsSettings' => 'Set to delete reports older than {deleteReportsOlderThan} months.',
         'PrivacyManager.setScheduleReportDeletionSettings' => '',
-        'RebelABTesting.deleteExperiment' => 'Deleted experiment with id {id} for site {idSite}.',
-        'RebelABTesting.insertExperiment' => 'Added experiment {name} for site {idSite}.',
-        'RebelABTesting.stopExperiment' => 'Stopped experiment with id {id} for site {idSite}.',
-        'RebelABTesting.updateExperiment' => 'Updated experiment {name} ({id}) for site {idSite}.',
+        'RebelExperiments.deleteExperiment' => 'Deleted experiment with id {id} for site {idSite}.',
+        'RebelExperiments.insertExperiment' => 'Added experiment {name} for site {idSite}.',
+        'RebelExperiments.rollOutVariant' => 'Rolled out variant {variant} of experiment with id {id} for site {idSite}.',
+        'RebelExperiments.setDecision' => 'Recorded the decision {decision} for experiment with id {id} for site {idSite}.',
+        'RebelExperiments.stopExperiment' => 'Stopped experiment with id {id} for site {idSite}.',
+        'RebelExperiments.updateExperiment' => 'Updated experiment {name} ({id}) for site {idSite}.',
         'RebelFunnels.addFunnel' => 'Added funnel {name} for site {idSite}.',
         'RebelFunnels.deleteFunnel' => 'Deleted funnel with id {idFunnel} for site {idSite}.',
         'RebelFunnels.duplicateFunnel' => 'Duplicated funnel with id {idFunnel} of site {idSite}.',
@@ -162,6 +164,11 @@ class EventLogger
         'TagManager.containerFileDeleted' => 'logContainerFileDeleted',
         'TwoFactorAuth.disabled' => 'logTwoFactorDisabled',
         'TwoFactorAuth.enabled' => 'logTwoFactorEnabled',
+        'UserFeedback.feedback.deleted' => 'logFeedbackDeleted',
+        'UserFeedback.form.copied' => 'logFeedbackFormCopied',
+        'UserFeedback.form.created' => 'logFeedbackFormCreated',
+        'UserFeedback.form.deleted' => 'logFeedbackFormDeleted',
+        'UserFeedback.form.edit' => 'logFeedbackFormEdited',
         'UsersManager.addUser.end' => 'logUserAdded',
         'UsersManager.deleteUser' => 'logUserDeleted',
         'UsersManager.inviteUser.accepted' => 'logInviteAccepted',
@@ -234,6 +241,41 @@ class EventLogger
     {
         $bot = (array) $bot;
         $this->log('BotTracker', 'updateBot.successful', "Bot {$this->toText($bot['botName'] ?? '')} updated for site {$this->toText($idSite)}.", ['idSite' => $idSite] + $bot);
+    }
+
+    public function logFeedbackDeleted($idSite = '', $ids = []): void
+    {
+        $this->log('UserFeedback', 'feedback.deleted', "Deleted feedback answers with id {$this->toText($ids)} for site {$this->toText($idSite)}.", ['idSite' => $idSite, 'ids' => $ids]);
+    }
+
+    public function logFeedbackFormCopied($idSite = '', $idForm = '', $name = '', $idSourceForm = ''): void
+    {
+        $this->logFeedbackForm('copied', "Copied feedback form with id {$this->toText($idSourceForm)} to {$this->toText($name)} ({$this->toText($idForm)}) for site {$this->toText($idSite)}.", $idSite, $idForm, $name);
+    }
+
+    public function logFeedbackFormCreated($idSite = '', $idForm = '', $name = ''): void
+    {
+        $this->logFeedbackForm('created', "Added feedback form {$this->toText($name)} ({$this->toText($idForm)}) for site {$this->toText($idSite)}.", $idSite, $idForm, $name);
+    }
+
+    public function logFeedbackFormDeleted($idSite = '', $idForm = '', $name = ''): void
+    {
+        $this->logFeedbackForm('deleted', "Deleted feedback form {$this->toText($name)} ({$this->toText($idForm)}) for site {$this->toText($idSite)}.", $idSite, $idForm, $name);
+    }
+
+    public function logFeedbackFormEdited($idSite = '', $idForm = '', $name = ''): void
+    {
+        $this->logFeedbackForm('edit', "Updated feedback form {$this->toText($name)} ({$this->toText($idForm)}) for site {$this->toText($idSite)}.", $idSite, $idForm, $name);
+    }
+
+    /**
+     * @param mixed $idSite
+     * @param mixed $idForm
+     * @param mixed $name
+     */
+    private function logFeedbackForm(string $task, string $message, $idSite, $idForm, $name): void
+    {
+        $this->log('UserFeedback', 'form.' . $task, $message, ['idSite' => $idSite, 'idForm' => $idForm, 'name' => $name]);
     }
 
     public function logConfigFileChanged($file = ''): void
