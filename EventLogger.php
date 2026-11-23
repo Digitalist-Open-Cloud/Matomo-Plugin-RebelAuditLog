@@ -72,6 +72,12 @@ class EventLogger
         'PrivacyManager.setDeleteLogsSettings' => 'Set to delete logs older than {deleteLogsOlderThan} days.',
         'PrivacyManager.setDeleteReportsSettings' => 'Set to delete reports older than {deleteReportsOlderThan} months.',
         'PrivacyManager.setScheduleReportDeletionSettings' => '',
+        'RebelAds.addAd' => 'Added ad {adminTitle} for site {idSite}.',
+        'RebelAds.addClient' => 'Added ad client {name}.',
+        'RebelAds.deleteAd' => 'Deleted ad with id {id} for site {idSite}.',
+        'RebelAds.deleteClient' => 'Deleted ad client with id {id}.',
+        'RebelAds.updateAd' => 'Updated ad {adminTitle} ({id}) for site {idSite}.',
+        'RebelAds.updateClient' => 'Updated ad client {name} ({id}).',
         'RebelExperiments.deleteExperiment' => 'Deleted experiment with id {id} for site {idSite}.',
         'RebelExperiments.insertExperiment' => 'Added experiment {name} for site {idSite}.',
         'RebelExperiments.rollOutVariant' => 'Rolled out variant {variant} of experiment with id {id} for site {idSite}.',
@@ -144,6 +150,12 @@ class EventLogger
         'BotTracker.insertBot.successful' => 'logBotInserted',
         'BotTracker.updateBot.successful' => 'logBotUpdated',
         'Core.configFileChanged' => 'logConfigFileChanged',
+        'DataCleanerExtended.alarm.added' => 'logPiiAlarmAdded',
+        'DataCleanerExtended.alarm.deleted' => 'logPiiAlarmDeleted',
+        'DataCleanerExtended.anonymized' => 'logNamesAnonymized',
+        'RebelNotifications.notification.added' => 'logNotificationAdded',
+        'RebelNotifications.notification.deleted' => 'logNotificationDeleted',
+        'RebelNotifications.notification.updated' => 'logNotificationUpdated',
         // The UI creates and deletes API tokens without an event of their own.
         'Controller.UsersManager.addNewToken' => 'rememberTokenCount',
         'Controller.UsersManager.addNewToken.end' => 'logTokenChange',
@@ -241,6 +253,41 @@ class EventLogger
     {
         $bot = (array) $bot;
         $this->log('BotTracker', 'updateBot.successful', "Bot {$this->toText($bot['botName'] ?? '')} updated for site {$this->toText($idSite)}.", ['idSite' => $idSite] + $bot);
+    }
+
+    public function logNamesAnonymized($field = '', $pattern = '', $replacement = '', $from = '', $to = '', $changed = 0): void
+    {
+        $this->log(
+            'DataCleanerExtended',
+            'anonymized',
+            "Replaced {$this->toText($pattern)} with {$this->toText($replacement)} in {$this->toText($changed)} names of the field {$this->toText($field)}, used from {$this->toText($from)} to {$this->toText($to)}.",
+            ['field' => $field, 'pattern' => $pattern, 'replacement' => $replacement, 'from' => $from, 'to' => $to, 'changed' => $changed]
+        );
+    }
+
+    public function logPiiAlarmAdded($id = '', $name = ''): void
+    {
+        $this->log('DataCleanerExtended', 'alarm.added', "Added PII alarm {$this->toText($name)} ({$this->toText($id)}).", ['id' => $id, 'name' => $name]);
+    }
+
+    public function logPiiAlarmDeleted($id = ''): void
+    {
+        $this->log('DataCleanerExtended', 'alarm.deleted', "Deleted PII alarm with id {$this->toText($id)}.", ['id' => $id]);
+    }
+
+    public function logNotificationAdded($id = '', $title = ''): void
+    {
+        $this->log('RebelNotifications', 'notification.added', "Added notification {$this->toText($title)} ({$this->toText($id)}).", ['id' => $id, 'title' => $title]);
+    }
+
+    public function logNotificationUpdated($id = '', $title = ''): void
+    {
+        $this->log('RebelNotifications', 'notification.updated', "Updated notification {$this->toText($title)} ({$this->toText($id)}).", ['id' => $id, 'title' => $title]);
+    }
+
+    public function logNotificationDeleted($id = ''): void
+    {
+        $this->log('RebelNotifications', 'notification.deleted', "Deleted notification with id {$this->toText($id)}.", ['id' => $id]);
     }
 
     public function logFeedbackDeleted($idSite = '', $ids = []): void

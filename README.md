@@ -23,6 +23,9 @@ can be read by super users only.
 - Tag Manager: containers, tags, triggers, variables and versions.
 - Custom Alerts, Group Permissions and Bot Tracker, when those plugins are installed.
 - Forms of UserFeedback added, changed, copied and deleted, and feedback answers deleted.
+- Ads and clients of RebelAds added, changed and deleted.
+- Names anonymized with DataCleanerExtended, and its alarms added and deleted.
+- Notifications added, changed and deleted with RebelNotifications.
 
 Each entry has the user, the IP address, the time, a sentence that tells what happened and the
 values that were sent, as details.
