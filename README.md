@@ -13,7 +13,7 @@ can be read by super users only.
 - Users: added, invited, changed, deleted, access, super user access and capabilities changed.
 - API tokens created and deleted, and two-factor authentication turned on or off.
 - Scheduled email reports added, changed, deleted and sent by hand.
-- Reports of RebelMyReports, funnels of RebelFunnels and experiments of RebelABTesting added,
+- Reports of RebelMyReports, funnels of RebelFunnels and experiments of RebelExperiments added,
   changed and deleted.
 - Websites, goals, segments, annotations, dashboards and custom dimensions: added, changed
   and deleted.
@@ -22,6 +22,10 @@ can be read by super users only.
 - System settings saved and the config file changed.
 - Tag Manager: containers, tags, triggers, variables and versions.
 - Custom Alerts, Group Permissions and Bot Tracker, when those plugins are installed.
+- Forms of UserFeedback added, changed, copied and deleted, and feedback answers deleted.
+- Ads and clients of RebelAds added, changed and deleted.
+- Names anonymized with DataCleanerExtended, and its alarms added and deleted.
+- Notifications added, changed and deleted with RebelNotifications.
 
 Each entry has the user, the IP address, the time, a sentence that tells what happened and the
 values that were sent, as details.
